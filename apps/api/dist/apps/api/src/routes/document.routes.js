@@ -1,0 +1,10 @@
+import { Hono } from "hono";
+import { authMiddleware } from "../middlewares/auth.middleware";
+import { createDocumentController, deleteDocumentController, getDocumentController, shareDocumentController, updateDocumentController, } from "../controllers/document.controller";
+export const documentRoutes = new Hono();
+documentRoutes.use("*", authMiddleware);
+documentRoutes.post("/documents", createDocumentController);
+documentRoutes.get("/documents/:id", getDocumentController);
+documentRoutes.put("/documents/:id", updateDocumentController);
+documentRoutes.delete("/documents/:id", deleteDocumentController);
+documentRoutes.post("/documents/:id/share", shareDocumentController);

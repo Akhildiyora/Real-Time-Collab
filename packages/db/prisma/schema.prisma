@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id             String                 @id @default(uuid())
+  email          String                 @unique
+  password       String
+  role           UserRole               @default(USER)
+  createdAt      DateTime               @default(now())
+  documents      Document[]
+  collaborations DocumentCollaborator[]
+  comments       Comment[]
+  activities     ActivityLog[]
+}
+
+model Document {
+  id            String                 @id @default(uuid())
+  title         String
+  content       String
+  ownerId       String
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  owner         User                   @relation(fields: [ownerId], references: [id])
+  collaborators DocumentCollaborator[]
+  versions      DocumentVersion[]
+  comments      Comment[]
+  activities    ActivityLog[]
+}
+
+model DocumentCollaborator {
+  id         String   @id @default(uuid())
+  documentId String
+  userId     String
+  role       String   @default("editor")
+  createdAt  DateTime @default(now())
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, userId])
+}
+
+model DocumentVersion {
+  id         String   @id @default(uuid())
+  documentId String
+  content    String
+  version    Int
+  createdAt  DateTime @default(now())
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, version])
+}
+
+model Comment {
+  id         String   @id @default(uuid())
+  documentId String
+  authorId   String
+  body       String
+  createdAt  DateTime @default(now())
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model ActivityLog {
+  id         String   @id @default(uuid())
+  userId     String
+  documentId String?
+  action     String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document   Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
