@@ -1,13 +1,17 @@
-import type { ReactNode } from 'react'
+import type { ReactNode } from 'react';
+import { Navbar } from './Navbar';
 
 type AppLayoutProps = {
-  children: ReactNode
-}
+  children: ReactNode;
+};
 
 export function AppLayout({ children }: AppLayoutProps) {
   return (
-    <div className="min-h-svh bg-slate-950 text-slate-100">
-      <main className="mx-auto flex max-w-4xl flex-col px-4 py-10">{children}</main>
+    <div className="min-h-svh bg-bg text-text selection:bg-accent/20 selection:text-accent">
+      <Navbar />
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+        {children}
+      </main>
     </div>
-  )
+  );
 }

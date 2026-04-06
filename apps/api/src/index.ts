@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { authRoutes } from "./routes/auth.routes";
 import { documentRoutes } from "./routes/document.routes";
+import { userRoutes } from "./routes/user.routes";
 import { setupYjsWebsocket } from "./websocket/yjsWebsocket";
 
 const app = new Hono();
@@ -20,6 +21,7 @@ app.use(
 app.get("/", (c) => c.json({ ok: true, service: "api" }));
 app.route("/auth", authRoutes);
 app.route("/", documentRoutes);
+app.route("/users", userRoutes);
 
 const httpServer = serve(
   {

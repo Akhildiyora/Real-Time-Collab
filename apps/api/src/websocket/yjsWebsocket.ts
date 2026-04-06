@@ -2,8 +2,10 @@ import crypto from "node:crypto";
 import type { IncomingMessage } from "node:http";
 import type { WebSocket } from "ws";
 import { WebSocketServer } from "ws";
-import { prisma } from "../../../../packages/db/src/index";
-import { getYDoc, setupWSConnection, setContentInitializor } from "@y/websocket-server/utils";
+import * as Y from "yjs";
+import { prisma } from "@repo/db";
+// @ts-ignore - y-websocket/bin/utils is the standard location for setupWSConnection
+import { setupWSConnection, setPersistence, getYDoc } from "y-websocket/bin/utils";
 import { redis } from "../redis";
 import { verifyAccessToken } from "../services/token.service";
 
@@ -18,78 +20,76 @@ function docPresenceChannel(documentId: string) {
 }
 
 const REDIS_APPLY_ORIGIN = { kind: "redis-apply" } as const;
+const PERSISTENCE_ORIGIN = { kind: "prisma-persistence" } as const;
 const REDIS_INSTANCE_ID = crypto.randomUUID();
 
 const bridgedDocs = new Map<string, boolean>();
-
-function extractDocIdFromReq(req: IncomingMessage) {
-  // y-websocket client connects to `ws://host:port/<roomname>?...`
-  // @y/websocket-server uses the URL pathname as `docName` by default.
-  const url = new URL(req.url || "/", `http://${req.headers.host ?? "localhost"}`);
-  return url.pathname.replace(/^\//, "");
-}
-
-function getTokenFromReq(req: IncomingMessage) {
-  const url = new URL(req.url || "/", `http://${req.headers.host ?? "localhost"}`);
-  const tokenFromQuery = url.searchParams.get("token");
-
-  const authHeader = req.headers.authorization;
-  const bearer =
-    typeof authHeader === "string" ? authHeader.replace(/^Bearer\s+/i, "").trim() : undefined;
-
-  return tokenFromQuery ?? bearer;
-}
-
-async function userCanAccessDocument(documentId: string, userId: string) {
-  const doc = await prisma.document.findFirst({
-    where: {
-      id: documentId,
-      OR: [
-        { ownerId: userId },
-        { collaborators: { some: { userId } } },
-      ],
-    },
-    select: { id: true },
-  });
-  return !!doc;
-}
+const userSockets = new Map<string, Set<WebSocket>>();
+const DEBOUNCE_MS = 10000;
 
 export async function setupYjsWebsocket(httpServer: any) {
-  // Set initial content loader (best effort). For now we keep documents empty
-  // and let Phase 6 persist Yjs state back to PostgreSQL.
-  setContentInitializor(async (_ydoc) => {
-    // Intentionally left blank for now.
+  // Persistence: Load initial document state from Prisma
+  setPersistence({
+    bindState: async (docName: string, ydoc: Y.Doc) => {
+      // 1. Load from DB
+      const doc = await prisma.document.findUnique({
+        where: { id: docName },
+        select: { content: true, yjsState: true },
+      });
+
+      if (doc?.yjsState) {
+        Y.applyUpdate(ydoc, new Uint8Array(doc.yjsState as any), PERSISTENCE_ORIGIN);
+      } else if (doc?.content) {
+        const text = ydoc.getText("default");
+        text.insert(0, doc.content);
+      }
+
+      // 2. We handle the saving ourselves in bridgeDocToRedis to integrate with Redis
+    },
+    writeState: async (_docName: string, _ydoc: Y.Doc) => {
+      // Handled in bridgeDocToRedis
+      return true;
+    }
   });
 
   const wss = new WebSocketServer({ noServer: true });
 
-  // Redis subscriber: receives updates from other instances, applies them to the
-  // local Y.Doc so connected clients receive them.
+  // Connect both main and subscriber if not already
   const subscriber = redis.duplicate();
-  await subscriber.connect();
-  await subscriber.psubscribe("doc:*:updates", "doc:*:presence");
+  if (subscriber.status === "wait") await subscriber.connect();
+
+  await subscriber.psubscribe(
+    "doc:*:updates",
+    "doc:*:presence",
+    "doc:*:comments",
+    "user:*:notifications"
+  );
   subscriber.on("pmessage", (pattern: string, channel: string, message: string) => {
     void handleRedisMessage(pattern, channel, message);
   });
 
   wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
     const docId = extractDocIdFromReq(req);
-    if (!docId) {
-      ws.close(1008, "Missing document id");
+    const userId = (req as any).userId;
+    if (!docId || !userId) {
+      ws.close(1008, "Missing required context");
       return;
     }
 
-    // Bridge Yjs <-> Redis for this doc (idempotent).
+    // Track user socket for targeted notifications
+    if (!userSockets.has(userId)) userSockets.set(userId, new Set());
+    userSockets.get(userId)!.add(ws);
+
+    ws.on("close", () => {
+      userSockets.get(userId)?.delete(ws);
+      if (userSockets.get(userId)?.size === 0) userSockets.delete(userId);
+    });
+
     void bridgeDocToRedis(docId);
 
-    // Presence bridging:
-    // - publish raw awareness messages from clients to Redis
-    // - other instances forward the same raw message to their connected clients
     ws.on("message", (data: WebSocket.RawData) => {
       try {
         const message = Buffer.isBuffer(data) ? data : Buffer.from(data as any);
-        // y-websocket protocol: first varuint is message type (0=sync, 1=awareness).
-        // Since message types are tiny (0/1), the varuint is encoded in the first byte.
         const messageType = message[0];
         const messageAwareness = 1;
         if (messageType !== messageAwareness) return;
@@ -99,7 +99,7 @@ export async function setupYjsWebsocket(httpServer: any) {
           message: message.toString("base64"),
         }));
       } catch {
-        // If decoding fails, ignore the message (editor will still work locally).
+        // Ignore awareness decoding issues
       }
     });
 
@@ -107,7 +107,6 @@ export async function setupYjsWebsocket(httpServer: any) {
   });
 
   httpServer.on("upgrade", async (req: IncomingMessage, socket: any, head: Buffer) => {
-    // Only handle WS upgrades
     if (!req.headers.upgrade || req.headers.upgrade.toLowerCase() !== "websocket") return;
 
     const docId = extractDocIdFromReq(req);
@@ -117,9 +116,6 @@ export async function setupYjsWebsocket(httpServer: any) {
       return;
     }
 
-    // Auth check: verify JWT access token, then confirm ownership/sharing in PostgreSQL.
-    // For now, we accept any collaborator for read/write. Viewer restrictions can be
-    // enforced once we introduce a write filter at the message layer.
     const token = getTokenFromReq(req);
     if (!token) {
       socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
@@ -148,6 +144,7 @@ export async function setupYjsWebsocket(httpServer: any) {
     }
 
     wss.handleUpgrade(req, socket, head, (ws) => {
+      (req as any).userId = payload!.sub;
       wss.emit("connection", ws, req);
     });
   });
@@ -156,20 +153,42 @@ export async function setupYjsWebsocket(httpServer: any) {
     if (bridgedDocs.get(documentId)) return;
     bridgedDocs.set(documentId, true);
 
-    const doc = getYDoc(documentId, true);
+    const doc = getYDoc(documentId, true) as any;
+    doc.name = documentId;
 
-    doc.on("update", (update: Uint8Array, origin: unknown) => {
-      if (origin === REDIS_APPLY_ORIGIN) return;
-      const payload = {
-        instanceId: REDIS_INSTANCE_ID,
-        update: Buffer.from(update).toString("base64"),
-      };
-      void redis.publish(docUpdatesChannel(documentId), JSON.stringify(payload));
+    let timeout: NodeJS.Timeout | null = null;
+
+    doc.on("update", (update: Uint8Array, origin: any) => {
+      // 1. Publish to Redis (if not coming from Redis)
+      if (origin !== REDIS_APPLY_ORIGIN) {
+        const payload = {
+          instanceId: REDIS_INSTANCE_ID,
+          update: Buffer.from(update).toString("base64"),
+        };
+        void redis.publish(docUpdatesChannel(documentId), JSON.stringify(payload));
+      }
+
+      // 2. Persist to DB (Debounced)
+      if (origin !== PERSISTENCE_ORIGIN) {
+        if (timeout) clearTimeout(timeout);
+        timeout = setTimeout(async () => {
+          const state = Y.encodeStateAsUpdate(doc);
+          const content = doc.getText("default").toString();
+          
+          await prisma.document.update({
+            where: { id: documentId },
+            data: {
+              yjsState: Buffer.from(state),
+              content: content,
+            },
+          });
+          timeout = null;
+        }, DEBOUNCE_MS);
+      }
     });
   }
 
   async function handleRedisMessage(_pattern: string, channel: string, message: string) {
-    // channel: doc:{id}:updates | doc:{id}:presence
     const parts = channel.split(":");
     const documentId = parts[1];
     if (!documentId) return;
@@ -183,26 +202,52 @@ export async function setupYjsWebsocket(httpServer: any) {
       return;
     }
 
-    if (!parsed) return;
-    if (parsed.instanceId === REDIS_INSTANCE_ID) return;
+    if (!parsed || parsed.instanceId === REDIS_INSTANCE_ID) return;
 
-    if (kind === "updates") {
-      if (!parsed.update) return;
+    if (kind === "updates" && parsed.update) {
       const update = Uint8Array.from(Buffer.from(parsed.update, "base64"));
       doc.applyUpdate(update, REDIS_APPLY_ORIGIN);
-      return;
-    }
-
-    if (kind === "presence") {
-      if (!parsed.message) return;
-      // For presence we forward raw awareness messages to connected clients.
-      // Note: we intentionally don't apply to doc.awareness here, so the doc's
-      // initial awareness snapshot might lag until the next local awareness update.
+    } else if (kind === "presence" && parsed.message) {
       const msgBytes = Uint8Array.from(Buffer.from(parsed.message, "base64"));
       doc.conns.forEach((_value: any, conn: any) => {
         if (conn.readyState === 1) conn.send(msgBytes);
+      });
+    } else if (kind === "comments") {
+      // Send comment events to all connections in this document
+      doc.conns.forEach((_value: any, conn: any) => {
+        if (conn.readyState === 1) {
+          conn.send(JSON.stringify({ type: "SYNC_EVENT", payload: parsed }));
+        }
+      });
+    } else if (kind === "notifications") {
+      // Send notification to specific user's sockets
+      const userId = parts[1];
+      userSockets.get(userId)?.forEach((ws) => {
+        if (ws.readyState === 1) {
+          ws.send(JSON.stringify({ type: "NOTIFICATION", payload: parsed }));
+        }
       });
     }
   }
 }
 
+function extractDocIdFromReq(req: IncomingMessage) {
+  const url = new URL(req.url || "/", `http://${req.headers.host ?? "localhost"}`);
+  return url.pathname.replace(/^\//, "");
+}
+
+function getTokenFromReq(req: IncomingMessage) {
+  const url = new URL(req.url || "/", `http://${req.headers.host ?? "localhost"}`);
+  return url.searchParams.get("token") || req.headers.authorization?.replace(/^Bearer\s+/i, "").trim();
+}
+
+async function userCanAccessDocument(documentId: string, userId: string) {
+  const doc = await prisma.document.findFirst({
+    where: {
+      id: documentId,
+      OR: [{ ownerId: userId }, { collaborators: { some: { userId } } }],
+    },
+    select: { id: true },
+  });
+  return !!doc;
+}

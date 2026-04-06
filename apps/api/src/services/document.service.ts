@@ -1,20 +1,22 @@
-import { prisma } from "../../../../packages/db/src/index";
+import { prisma } from "@repo/db";
 
 export type DocumentRole = "owner" | "editor" | "viewer";
 
 export async function createDocument(params: {
   ownerId: string;
   title: string;
-  content: string;
+  content?: string;
+  yjsState?: Buffer;
 }) {
   const doc = await prisma.document.create({
     data: {
       title: params.title,
-      content: params.content,
+      content: params.content ?? "",
+      yjsState: params.yjsState as any,
       ownerId: params.ownerId,
       versions: {
         create: {
-          content: params.content,
+          content: params.content ?? "",
           version: 1,
         },
       },
@@ -27,6 +29,18 @@ export async function createDocument(params: {
     },
   });
   return doc;
+}
+
+export async function getDocumentsForUser(userId: string) {
+  return prisma.document.findMany({
+    where: {
+      OR: [
+        { ownerId: userId },
+        { collaborators: { some: { userId } } },
+      ],
+    },
+    orderBy: { updatedAt: "desc" },
+  });
 }
 
 export async function getDocumentForUser(documentId: string, userId: string) {
@@ -93,14 +107,18 @@ export async function deleteDocumentForUser(documentId: string, userId: string) 
   if (!doc) return null;
   if (doc.ownerId !== userId) return "forbidden" as const;
 
-  await prisma.document.delete({ where: { id: documentId } });
+  // Log the deletion BEFORE removing the document to ensure the foreign key (if required) is valid
+  // or simply log the event without the documentId if the record is gone.
   await prisma.activityLog.create({
     data: {
       userId,
-      documentId,
+      documentId: null, // Set to null since the document is being erased
       action: "DOCUMENT_DELETED",
+      metadata: { deletedDocumentId: documentId, title: doc.title }
     },
   });
+
+  await prisma.document.delete({ where: { id: documentId } });
 
   return true;
 }
@@ -145,3 +163,12 @@ export async function setDocumentCollaborator(params: {
   return collab;
 }
 
+export async function getDocumentVersions(documentId: string, userId: string) {
+  const doc = await getDocumentForUser(documentId, userId);
+  if (!doc) return null;
+
+  return prisma.documentVersion.findMany({
+    where: { documentId },
+    orderBy: { version: "desc" },
+  });
+}
