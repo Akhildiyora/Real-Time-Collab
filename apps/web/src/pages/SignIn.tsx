@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
+import { GoogleButton } from '../components/auth/GoogleButton';
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
@@ -96,6 +97,17 @@ export default function SignIn() {
             </button>
           </div>
         </form>
+
+        <div className="relative my-8">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-white/5"></span>
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-bg px-4 text-text/40 font-black tracking-[0.2em]"> OR </span>
+          </div>
+        </div>
+
+        <GoogleButton />
 
         <div className="text-center text-sm">
           <p className="text-text">

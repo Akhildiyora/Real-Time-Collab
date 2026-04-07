@@ -1,6 +1,6 @@
 import { prisma } from "@repo/db";
 
-export type DocumentRole = "owner" | "editor" | "viewer";
+export type DocumentRole = "admin" | "editor" | "viewer";
 
 export async function createDocument(params: {
   ownerId: string;
@@ -54,8 +54,36 @@ export async function getDocumentForUser(documentId: string, userId: string) {
     },
     include: {
       collaborators: true,
+      owner: {
+        select: { id: true, email: true }
+      }
     },
   });
+}
+
+/**
+ * Enhanced document access check for RBAC support.
+ */
+export async function getDocumentAccess(documentId: string, userId: string): Promise<{ role: DocumentRole } | null> {
+  const doc = await prisma.document.findUnique({
+    where: { id: documentId },
+    select: {
+      ownerId: true,
+      collaborators: {
+        where: { userId },
+        select: { role: true }
+      }
+    }
+  });
+
+  if (!doc) return null;
+
+  if (doc.ownerId === userId) return { role: "admin" };
+
+  const collab = doc.collaborators[0];
+  if (collab) return { role: collab.role as DocumentRole };
+
+  return null;
 }
 
 export async function updateDocumentForUser(params: {
@@ -63,14 +91,16 @@ export async function updateDocumentForUser(params: {
   userId: string;
   title?: string;
   content?: string;
+  yjsState?: Buffer;
 }) {
-  const existing = await getDocumentForUser(params.documentId, params.userId);
-  if (!existing) return null;
+  const access = await getDocumentAccess(params.documentId, params.userId);
+  if (!access) return null;
 
-  const canEdit =
-    existing.ownerId === params.userId ||
-    existing.collaborators.some((c) => c.userId === params.userId && c.role !== "viewer");
-  if (!canEdit) return "forbidden" as const;
+  // Verbatim Phase 8: Only "admin" and "editor" can commit updates
+  if (access.role === "viewer") return "forbidden" as const;
+
+  const existing = await prisma.document.findUnique({ where: { id: params.documentId } });
+  if (!existing) return null;
 
   const nextVersionNumber =
     (await prisma.documentVersion.count({
@@ -82,6 +112,7 @@ export async function updateDocumentForUser(params: {
     data: {
       title: params.title ?? existing.title,
       content: params.content ?? existing.content,
+      yjsState: params.yjsState ?? (existing.yjsState as any),
       versions: params.content
         ? {
             create: {

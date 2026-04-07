@@ -1,217 +1,265 @@
-import { Component, ErrorInfo, ReactNode, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { documentService, type EditorDocument } from '../services/document.service';
+import { commentService, type EditorComment } from '../services/comment.service';
 import { useAuthStore } from '../store/auth.store';
-import { documentService } from '../services/document.service';
-import { useQuery } from '@tanstack/react-query';
-import { ShareModal } from '../components/ShareModal';
+import { NeuralEditor } from '../components/editor/NeuralEditor';
+import { ShareModal } from '../components/sharing/ShareModal';
 import { 
   ArrowLeft, 
   Share2, 
-  X,
-  Clock,
-  History,
-  MessageCircle,
-  AlertCircle,
-  Loader2,
+  History, 
+  MessageSquare, 
   ChevronRight,
-  Settings
+  ShieldAlert,
+  Loader2
 } from 'lucide-react';
-import { CommentSidebar } from '../components/CommentSidebar';
-import { commentService } from '../services/comment.service';
-import { NeuralEditor } from '../components/editor/NeuralEditor';
 
-// --- Helper for User Visuals ---
-function getAvatarColor(email: string) {
-  const colors = ['bg-red-400', 'bg-amber-400', 'bg-emerald-400', 'bg-sky-400', 'bg-indigo-400', 'bg-fuchsia-400', 'bg-orange-400'];
-  let hash = 0;
-  for (let i = 0; i < email.length; i++) hash = email.charCodeAt(i) + ((hash << 5) - hash);
-  return colors[Math.abs(hash) % colors.length];
-}
-
-// --- ErrorBoundary ---
-class EditorErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
-  constructor(props: any) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-  static getDerivedStateFromError(error: Error) { return { hasError: true, error }; }
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) { console.error("Neural Node Crash:", error, errorInfo); }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="flex flex-col items-center justify-center min-h-[600px] gap-8 p-12 border-2 border-dashed border-red-500/10 rounded-[60px] bg-red-500/05 animate-in zoom-in-75 duration-700 shadow-3xl">
-           <AlertCircle className="h-16 w-16 text-red-500" />
-           <div className="text-center space-y-4">
-             <h3 className="font-black text-red-500 text-3xl uppercase tracking-tighter">Vector Surface Disrupted</h3>
-             <p className="text-[10px] text-text-muted mt-2 uppercase tracking-[0.4em] font-bold opacity-40 max-w-sm mx-auto leading-loose">{this.state.error?.message || "Sync Protocol Failed (v11)"}</p>
-           </div>
-           <button onClick={() => window.location.reload()} className="px-14 py-4 mt-4 rounded-3xl bg-red-500 text-white font-black text-xs hover:bg-red-600 transition-all shadow-[0_20px_50px_rgba(239,68,68,0.3)] active:scale-90 tracking-widest">REBOOT TERMINAL</button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-// --- Main DocumentEditorPage ---
 export function DocumentEditorPage() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const shareToken = searchParams.get('token');
+  
   const navigate = useNavigate();
-  const { user: currentUser, isLoading: isAuthLoading, isAuthenticated } = useAuthStore();
+  const queryClient = useQueryClient();
+  const user = useAuthStore((state) => state.user);
+  const authLoading = useAuthStore((state) => state.isLoading);
   
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [isCommentsOpen, setIsCommentsOpen] = useState(true);
 
-  const { data: documentInfo } = useQuery({
-    queryKey: ['document', id],
-    queryFn: () => documentService.getDocument(id!),
+  // 1. Fetch Document (Support sharing token)
+  const { data: document, isLoading, error } = useQuery<EditorDocument & { currentUserRole?: string }>({
+    queryKey: ['document', id, shareToken],
+    queryFn: () => documentService.getDocument(id!, shareToken || undefined),
     enabled: !!id,
+    retry: false
   });
 
-  const { data: comments, refetch: refetchComments } = useQuery({
-    queryKey: ['comments', id],
-    queryFn: () => commentService.getComments(id!),
-    enabled: !!id && (isCommentsOpen || true), // Always fetch to ensure real-time marks work
+  // 2. Fetch Comments
+  const { data: comments = [] } = useQuery<EditorComment[]>({
+    queryKey: ['comments', id, shareToken],
+    queryFn: () => commentService.getComments(id!, shareToken || undefined),
+    enabled: !!id,
+    refetchInterval: 5000 // Poll for new comments if WS is sync-only
   });
 
-  const { data: versions } = useQuery({
-    queryKey: ['document-versions', id],
-    queryFn: () => documentService.getVersions(id!),
-    enabled: !!id && isHistoryOpen,
+  // 3. Mutations
+  const addCommentMutation = useMutation({
+    mutationFn: ({ content, anchorData }: { content: string, anchorData: any }) => 
+      commentService.createComment(id!, content, anchorData),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comments', id] })
   });
 
-  // --- v19: Reactive Sync Handler ---
-  const handleSyncEvent = useCallback(() => {
-    console.log('[Neural Sync] Triggering Reactive Refresh...');
-    refetchComments();
-  }, [refetchComments]);
+  const replyMutation = useMutation({
+    mutationFn: ({ commentId, content }: { commentId: string, content: string }) =>
+      commentService.createReply(commentId, content),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comments', id] })
+  });
 
-  if (isAuthLoading) return <div className="min-h-screen bg-bg flex items-center justify-center animate-in fade-in duration-1000"><Loader2 className="h-12 w-12 animate-spin text-accent opacity-20" /></div>;
-  if (!isAuthenticated || !currentUser) {
+  const resolveMutation = useMutation({
+    mutationFn: (commentId: string) => commentService.resolveComment(commentId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comments', id] })
+  });
+
+  const updateCommentMutation = useMutation({
+    mutationFn: ({ commentId, content }: { commentId: string, content: string }) => 
+      commentService.updateComment(commentId, content),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comments', id] })
+  });
+
+  const deleteCommentMutation = useMutation({
+    mutationFn: (commentId: string) => commentService.deleteComment(commentId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comments', id] })
+  });
+
+  const updateReplyMutation = useMutation({
+    mutationFn: ({ replyId, content }: { replyId: string, content: string }) => 
+      commentService.updateReply(replyId, content),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comments', id] })
+  });
+
+  const deleteReplyMutation = useMutation({
+    mutationFn: (replyId: string) => commentService.deleteReply(replyId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comments', id] })
+  });
+  
+  // Memoized handlers to prevent NeuralEditor re-mounts
+  const handleAddComment = useCallback(async (content: string, anchorData: any) => {
+    await addCommentMutation.mutateAsync({ content, anchorData });
+  }, [id, addCommentMutation]);
+
+  const handleReply = useCallback(async (commentId: string, content: string) => {
+    await replyMutation.mutateAsync({ commentId, content });
+  }, [id, replyMutation]);
+
+  const handleResolve = useCallback(async (commentId: string) => {
+    await resolveMutation.mutateAsync(commentId);
+  }, [id, resolveMutation]);
+
+  const handleUpdateComment = useCallback(async (commentId: string, content: string) => {
+    await updateCommentMutation.mutateAsync({ commentId, content });
+  }, [id, updateCommentMutation]);
+
+  const handleDeleteComment = useCallback(async (commentId: string) => {
+    await deleteCommentMutation.mutateAsync(commentId);
+  }, [id, deleteCommentMutation]);
+
+  const handleUpdateReply = useCallback(async (replyId: string, content: string) => {
+    await updateReplyMutation.mutateAsync({ replyId, content });
+  }, [id, updateReplyMutation]);
+
+  const handleDeleteReply = useCallback(async (replyId: string) => {
+    await deleteReplyMutation.mutateAsync(replyId);
+  }, [id, deleteReplyMutation]);
+
+  const handleSyncEvent = useCallback((event: any) => {
+    if (event?.type === 'SYNC_EVENT' || event?.kind === 'comments' || event?.payload?.kind === 'comments') {
+      const type = event?.type || event?.payload?.type;
+      if (type?.includes('COMMENT') || type?.includes('REPLY')) {
+        queryClient.invalidateQueries({ queryKey: ['comments', id] });
+      }
+    }
+  }, [id, queryClient]);
+
+  // Authenticated check: Skip if we have a valid share token
+  useEffect(() => {
+    if (!authLoading && !user && !shareToken) {
+      navigate('/login');
+    }
+  }, [user, authLoading, navigate, shareToken]);
+
+  if (isLoading || authLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-bg flex-col gap-10 text-text animate-in zoom-in-75 duration-1000">
-        <h2 className="text-5xl font-black tracking-tighter uppercase text-white shadow-[0_0_50px_rgba(0,0,0,0.5)]">Neural Barrier</h2>
-        <button onClick={() => navigate('/login')} className="px-16 py-5 bg-accent text-bg rounded-3xl font-black shadow-[0_0_50px_var(--color-accent)] hover:scale-110 active:scale-95 transition-all tracking-[0.2em] animate-pulse">RE-AUTHENTICATE</button>
+      <div className="h-screen w-full bg-bg flex items-center justify-center">
+        <div className="relative">
+          <div className="absolute inset-0 bg-accent/20 blur-3xl rounded-full animate-pulse" />
+          <Loader2 className="h-12 w-12 text-accent animate-spin relative z-10" />
+        </div>
       </div>
     );
   }
 
-  return (
-    <div className="flex h-screen overflow-hidden bg-bg text-text selection:bg-accent/40 font-sans tracking-tight">
-      {/* Sidebar - History */}
-      {isHistoryOpen && (
-        <div className="flex w-96 flex-col border-r border-white/5 bg-bg/85 backdrop-blur-3xl animate-in slide-in-from-left duration-1000 shadow-[20px_0_100px_rgba(0,0,0,0.5)] z-50">
-          <div className="flex items-center justify-between border-b border-white/5 p-10 mt-5">
-            <h2 className="text-[14px] font-black uppercase tracking-[0.5em] text-accent">Historical Trace</h2>
-            <button onClick={() => setIsHistoryOpen(false)} className="text-white/20 hover:text-white transition-all bg-white/5 p-3 rounded-2xl shadow-inner border border-white/5 group"><X className="h-6 w-6 group-hover:rotate-90 transition-transform" /></button>
+  if (error || !document) {
+    return (
+      <div className="h-screen w-full bg-bg flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white/5 border border-white/10 rounded-3xl p-10 text-center backdrop-blur-xl">
+          <div className="bg-red-500/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-8">
+            <ShieldAlert className="h-10 w-10 text-red-400" />
           </div>
-          <div className="flex-1 overflow-y-auto p-8 space-y-8">
-            {versions?.map((v: any) => (
-              <div key={v.id} className="group rounded-[48px] border border-white/5 p-8 hover:border-accent/40 transition-all cursor-default bg-white/5 shadow-2xl active:scale-[0.98]">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-black text-accent uppercase bg-accent/20 px-4 py-2 rounded-full border border-accent/20 shadow-[0_0_15px_rgba(var(--color-accent),0.2)]">V{v.version}</span>
-                  <Clock className="h-4 w-4 text-white/5" />
-                </div>
-                <p className="mt-7 text-[13px] text-text-muted line-clamp-4 leading-relaxed opacity-60 underline decoration-white/5 underline-offset-[12px] decoration-2">"{v.content.slice(0, 150)}..."</p>
-                <div className="mt-10 pt-8 border-t border-white/5 flex items-center justify-between">
-                  <span className="text-[10px] text-white/20 font-black uppercase tracking-[0.4em] font-mono">{new Date(v.createdAt).toLocaleDateString()}</span>
-                  <button className="text-[11px] font-black text-accent opacity-0 group-hover:opacity-100 transition-all hover:bg-accent/10 px-6 py-2.5 rounded-full border border-accent/20">RESTORE</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="flex flex-1 flex-col overflow-hidden relative">
-        {/* Editor Header */}
-        <div className="flex items-center justify-between border-b border-white/5 bg-bg/95 px-14 py-8 backdrop-blur-3xl sticky top-0 z-40 shadow-[0_30px_80px_rgba(0,0,0,0.6)] transition-all duration-1000">
-          <div className="flex items-center gap-12">
-            <button onClick={() => navigate('/')} className="rounded-3xl p-5 text-text-muted hover:bg-white/5 hover:text-accent transition-all ring-1 ring-white/10 hover:ring-accent/40 shadow-3xl active:scale-90 group"><ArrowLeft className="h-6 w-6 group-hover:-translate-x-2 transition-transform" /></button>
-            <div className="flex flex-col">
-               <div className="flex items-center gap-6">
-                  <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.8em] font-mono">WORKSPACE</span>
-                  <ChevronRight className="h-4 w-4 text-white/10" />
-                  <h1 className="text-4xl font-black tracking-tighter text-white leading-none">
-                    {documentInfo?.title || 'Untitled Vector'}
-                  </h1>
-                  <div className="h-3 w-3 rounded-full bg-accent animate-pulse shadow-[0_0_25px_var(--color-accent)]" />
-               </div>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-12">
-            <div className="flex items-center gap-6 bg-white/5 p-4 rounded-[36px] ring-1 ring-white/10 shadow-3xl">
-               <button onClick={() => setIsCommentsOpen(!isCommentsOpen)} className={`rounded-2xl p-5 transition-all duration-700 hover:scale-110 active:scale-95 ${isCommentsOpen ? 'bg-accent text-bg shadow-[0_0_50px_var(--color-accent)] scale-110' : 'text-text-muted hover:bg-white/10 hover:text-white'}`}><MessageCircle className="h-6 w-6" /></button>
-               <button onClick={() => setIsHistoryOpen(!isHistoryOpen)} className={`rounded-2xl p-5 transition-all duration-700 hover:scale-110 active:scale-95 ${isHistoryOpen ? 'bg-accent text-bg shadow-[0_0_50px_var(--color-accent)] scale-110' : 'text-text-muted hover:bg-white/10 hover:text-white'}`}><History className="h-6 w-6" /></button>
-            </div>
-
-            <button onClick={() => setIsShareModalOpen(true)} className="rounded-2xl bg-white/5 border border-white/10 px-12 py-5 text-[11px] font-black text-white hover:bg-accent hover:border-accent hover:text-bg hover:scale-[1.03] active:scale-95 transition-all flex items-center gap-4 animate-in fade-in shadow-2xl tracking-[0.2em] uppercase group">
-              <Share2 className="h-5 w-5 group-hover:rotate-12 transition-transform opacity-40 group-hover:text-bg group-hover:opacity-100" /> 
-              Share
-            </button>
-
-            {/* Profile Avatar */}
-            <div className="flex items-center gap-6 pl-8 border-l border-white/5 ml-4 group cursor-pointer">
-               <div className="flex flex-col items-end hidden lg:flex group-hover:translate-x-2 transition-transform duration-500">
-                  <span className="text-[11px] font-black text-white uppercase tracking-tighter leading-none group-hover:text-accent transition-colors">{currentUser.email.split('@')[0]}</span>
-                  <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.5em] leading-none mt-2">ACTIVE_NODE</span>
-               </div>
-               <div className={`h-16 w-16 rounded-[22px] flex items-center justify-center text-xl font-black text-white shadow-3xl border border-white/10 hover:scale-110 hover:rotate-12 transition-all duration-500 overflow-hidden relative ${getAvatarColor(currentUser.email)}`}>
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent pointer-events-none" />
-                  {currentUser.email[0].toUpperCase()}
-               </div>
-               <button onClick={() => navigate('/settings')} className="p-4 rounded-2xl text-white/10 hover:text-accent hover:bg-accent/10 transition-all border border-transparent hover:border-accent/30"><Settings className="h-5 w-5" /></button>
-            </div>
-          </div>
-        </div>
-
-        {/* Editor Surface - Self-Contained NeuralEditor */}
-        <div className="flex-1 overflow-y-auto p-12 md:p-24 bg-bg-canvas/70 relative selection:bg-accent/40">
-          <div className="mx-auto max-w-7xl space-y-24 animate-in fade-in slide-in-from-bottom-32 duration-1200">
-            <div className="min-h-[85vh] relative rounded-[110px] border border-white/10 bg-bg/95 shadow-[0_120px_300px_rgba(0,0,0,0.85)] transition-all overflow-hidden ring-1 ring-white/5 group backdrop-blur-3xl p-1.5 bg-gradient-to-br from-white/10 via-transparent to-white/5">
-               <div className="h-full w-full rounded-[106px] overflow-hidden bg-bg/95 relative">
-                  <EditorErrorBoundary>
-                     {id && (
-                       <NeuralEditor
-                         documentId={id}
-                         currentUser={currentUser}
-                         onAddComment={() => setIsCommentsOpen(true)}
-                         onSyncEvent={handleSyncEvent}
-                       />
-                     )}
-                  </EditorErrorBoundary>
-               </div>
-            </div>
-
-            {/* Futuristic Footer Trace */}
-            <div className="flex items-center justify-between px-24 text-[11px] font-black uppercase tracking-[1em] text-white/5 pb-40">
-               <div className="flex items-center gap-24">
-                  <span className="hover:text-accent transition-all cursor-default hover:tracking-[1.2em] opacity-30">DOC_VECTOR_{id?.slice(0, 14)}</span>
-                  <span className="hover:text-accent transition-all cursor-default opacity-20 shadow-[0_0_10px_currentColor]">PHASE_6_FINAL</span>
-               </div>
-               <div className="flex items-center gap-10 bg-white/5 px-14 py-5 rounded-full ring-1 ring-white/5 shadow-3xl hover:bg-white/10 transition-all group scale-110">
-                  <div className="h-2 w-2 rounded-full shadow-[0_0_15px_var(--color-accent)] bg-accent animate-pulse group-hover:scale-150 transition-transform" />
-                  <span className="opacity-30 tracking-[0.6em] uppercase font-mono group-hover:opacity-100 transition-opacity">Neural Sync Verified</span>
-               </div>
-            </div>
-          </div>
+          <h1 className="text-3xl font-black text-text-h mb-4 uppercase tracking-tighter">Access Denied</h1>
+          <p className="text-text-muted mb-8 text-sm leading-relaxed">
+            The neural link to this document has been severed or you lack the required clearance levels.
+          </p>
+          <button 
+            onClick={() => navigate('/dashboard')}
+            className="w-full bg-white text-bg py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-accent hover:text-white transition-all duration-500"
+          >
+            Return to Dashboard
+          </button>
         </div>
       </div>
+    );
+  }
 
-      {isCommentsOpen && id && (
-        <CommentSidebar
-          documentId={id}
-          comments={comments || []}
-          onClose={() => setIsCommentsOpen(false)}
-          onRefresh={refetchComments}
+  const userRole = document.currentUserRole || (document.ownerId === user?.id ? 'admin' : 'viewer');
+
+  return (
+    <div className="h-screen w-full bg-bg flex flex-col overflow-hidden text-text-h">
+      {/* Neural Navigation Shell */}
+      <header className="min-h-[5rem] py-3 border-b border-white/5 bg-bg/80 backdrop-blur-2xl flex flex-col md:flex-row items-center justify-between px-6 md:px-8 z-30 shrink-0 gap-4 md:gap-0">
+        <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto">
+          <button 
+            onClick={() => navigate('/dashboard')}
+            title="Return to Dashboard"
+            className="p-3 rounded-2xl hover:bg-white/5 text-text-muted hover:text-accent transition-all duration-300 group"
+          >
+            <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
+          </button>
+          
+          <div className="h-10 w-[1px] bg-white/10 hidden md:block" />
+          
+          <div className="flex-1 md:flex-none truncate">
+            <div className="flex items-center gap-2 mb-0.5 truncate">
+              <h1 className="text-base md:text-lg font-black tracking-tight leading-none truncate">{document.title}</h1>
+              <div className="px-2 py-0.5 rounded-md bg-accent/10 border border-accent/20 flex items-center gap-1 shrink-0">
+                <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+                <span className="text-[9px] md:text-[10px] font-black text-accent uppercase tracking-tighter">Live</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 md:gap-2 text-[9px] md:text-[10px] font-bold text-text-muted uppercase tracking-widest truncate">
+              <span className="truncate max-w-[100px] md:max-w-none">{document.owner?.email}</span>
+              <ChevronRight className="h-3 w-3 opacity-30 shrink-0" />
+              <span className="text-accent/70 shrink-0">{userRole}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between md:justify-end gap-2 md:gap-3 w-full md:w-auto border-t border-white/5 pt-3 md:pt-0 md:border-t-0">
+          <div className="flex -space-x-2 mr-2 md:mr-4">
+             {/* Collaborative Avatars Placeholder */}
+             <div className="h-8 w-8 rounded-full border-2 border-bg bg-accent/20 flex items-center justify-center text-[10px] font-black ring-1 ring-white/5" title="You">{user?.email?.[0].toUpperCase()}</div>
+             <div className="h-8 w-8 rounded-full border-2 border-bg bg-blue-500/20 flex items-center justify-center text-[10px] font-black ring-1 ring-white/5" title="3 other active collaborators">+3</div>
+          </div>
+
+          <div className="flex items-center gap-1.5 md:gap-2">
+            <button 
+              onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+              title="View History & Timeline"
+              className={`p-3 rounded-2xl transition-all duration-500 ${isHistoryOpen ? 'bg-accent text-white shadow-[0_0_20px_rgba(var(--accent-rgb),0.3)]' : 'hover:bg-white/5 text-text-muted hover:text-accent'}`}
+            >
+              <History className="h-5 w-5" />
+            </button>
+            
+            <button 
+              onClick={() => setIsCommentsOpen(!isCommentsOpen)}
+              title="Toggle Neural Feedback"
+              className={`p-3 rounded-2xl transition-all duration-500 ${isCommentsOpen ? 'bg-accent text-white shadow-[0_0_20px_rgba(var(--accent-rgb),0.3)]' : 'hover:bg-white/5 text-text-muted hover:text-accent'}`}
+            >
+              <MessageSquare className="h-5 w-5" />
+            </button>
+  
+            {userRole === 'admin' && (
+              <button 
+                onClick={() => setIsShareModalOpen(true)}
+                className="bg-white text-bg px-4 md:px-6 py-2.5 md:py-3 rounded-xl md:rounded-2xl font-black text-[10px] md:text-[11px] uppercase tracking-widest hover:bg-accent hover:text-white transition-all duration-300 flex items-center gap-2 shadow-2xl active:scale-95"
+              >
+                <Share2 className="h-3.5 w-3.5" />
+                <span className="hidden xs:inline">Secure Share</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Main Workspace Frame */}
+      <main className="flex-1 flex overflow-hidden relative">
+        <NeuralEditor
+          documentId={id!}
+          currentUser={user}
+          comments={comments}
+          onAddComment={handleAddComment}
+          onReply={handleReply}
+          onResolve={handleResolve}
+          onUpdateComment={handleUpdateComment}
+          onDeleteComment={handleDeleteComment}
+          onUpdateReply={handleUpdateReply}
+          onDeleteReply={handleDeleteReply}
+          onSyncEvent={handleSyncEvent}
+          userRole={userRole}
+          shareToken={shareToken}
         />
-      )}
+      </main>
 
-      {isShareModalOpen && id && (
-        <ShareModal documentId={id} onClose={() => setIsShareModalOpen(false)} />
-      )}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        documentId={id!}
+        documentTitle={document.title}
+        ownerEmail={document.owner?.email || ''}
+      />
     </div>
   );
 }

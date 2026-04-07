@@ -80,6 +80,24 @@ class AuthService {
     return user;
   }
 
+  async googleAuth(idToken: string): Promise<AuthResponse> {
+    const res = await fetch(`${API_URL}/auth/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken }),
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "Google authentication failed");
+    }
+
+    const data: AuthResponse = await res.json();
+    this.setToken(data.accessToken);
+    this.setRefreshToken(data.refreshToken);
+    return data;
+  }
+
   logout() {
     this.accessToken = null;
     localStorage.removeItem("accessToken");

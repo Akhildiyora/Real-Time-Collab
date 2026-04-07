@@ -10,6 +10,7 @@ interface AuthState {
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<void>;
 }
@@ -38,6 +39,18 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       await authService.signup(email, password);
       await useAuthStore.getState().login(email, password);
+    } catch (err: any) {
+      set({ error: err.message, isLoading: false });
+      throw err;
+    }
+  },
+
+  loginWithGoogle: async (idToken) => {
+    set({ isLoading: true, error: null });
+    try {
+      const data = await authService.googleAuth(idToken);
+      const user = await authService.getMe();
+      set({ user, accessToken: data.accessToken, isAuthenticated: true, isLoading: false });
     } catch (err: any) {
       set({ error: err.message, isLoading: false });
       throw err;

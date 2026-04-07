@@ -146,6 +146,15 @@ exports.Prisma.DocumentCollaboratorScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.ShareLinkScalarFieldEnum = {
+  id: 'id',
+  documentId: 'documentId',
+  token: 'token',
+  role: 'role',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.DocumentVersionScalarFieldEnum = {
   id: 'id',
   documentId: 'documentId',
@@ -158,7 +167,7 @@ exports.Prisma.CommentScalarFieldEnum = {
   id: 'id',
   documentId: 'documentId',
   authorId: 'authorId',
-  body: 'body',
+  content: 'content',
   anchorData: 'anchorData',
   isResolved: 'isResolved',
   createdAt: 'createdAt'
@@ -168,7 +177,7 @@ exports.Prisma.CommentReplyScalarFieldEnum = {
   id: 'id',
   commentId: 'commentId',
   authorId: 'authorId',
-  body: 'body',
+  content: 'content',
   createdAt: 'createdAt'
 };
 
@@ -230,6 +239,7 @@ exports.Prisma.ModelName = {
   User: 'User',
   Document: 'Document',
   DocumentCollaborator: 'DocumentCollaborator',
+  ShareLink: 'ShareLink',
   DocumentVersion: 'DocumentVersion',
   Comment: 'Comment',
   CommentReply: 'CommentReply',

@@ -29,6 +29,11 @@ export type Document = $Result.DefaultSelection<Prisma.$DocumentPayload>
  */
 export type DocumentCollaborator = $Result.DefaultSelection<Prisma.$DocumentCollaboratorPayload>
 /**
+ * Model ShareLink
+ * 
+ */
+export type ShareLink = $Result.DefaultSelection<Prisma.$ShareLinkPayload>
+/**
  * Model DocumentVersion
  * 
  */
@@ -226,6 +231,16 @@ export class PrismaClient<
     * ```
     */
   get documentCollaborator(): Prisma.DocumentCollaboratorDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.shareLink`: Exposes CRUD operations for the **ShareLink** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ShareLinks
+    * const shareLinks = await prisma.shareLink.findMany()
+    * ```
+    */
+  get shareLink(): Prisma.ShareLinkDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.documentVersion`: Exposes CRUD operations for the **DocumentVersion** model.
@@ -723,6 +738,7 @@ export namespace Prisma {
     User: 'User',
     Document: 'Document',
     DocumentCollaborator: 'DocumentCollaborator',
+    ShareLink: 'ShareLink',
     DocumentVersion: 'DocumentVersion',
     Comment: 'Comment',
     CommentReply: 'CommentReply',
@@ -744,7 +760,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "document" | "documentCollaborator" | "documentVersion" | "comment" | "commentReply" | "mention" | "notification" | "activityLog"
+      modelProps: "user" | "document" | "documentCollaborator" | "shareLink" | "documentVersion" | "comment" | "commentReply" | "mention" | "notification" | "activityLog"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -967,6 +983,80 @@ export namespace Prisma {
           count: {
             args: Prisma.DocumentCollaboratorCountArgs<ExtArgs>
             result: $Utils.Optional<DocumentCollaboratorCountAggregateOutputType> | number
+          }
+        }
+      }
+      ShareLink: {
+        payload: Prisma.$ShareLinkPayload<ExtArgs>
+        fields: Prisma.ShareLinkFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ShareLinkFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ShareLinkPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ShareLinkFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ShareLinkPayload>
+          }
+          findFirst: {
+            args: Prisma.ShareLinkFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ShareLinkPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ShareLinkFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ShareLinkPayload>
+          }
+          findMany: {
+            args: Prisma.ShareLinkFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ShareLinkPayload>[]
+          }
+          create: {
+            args: Prisma.ShareLinkCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ShareLinkPayload>
+          }
+          createMany: {
+            args: Prisma.ShareLinkCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ShareLinkCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ShareLinkPayload>[]
+          }
+          delete: {
+            args: Prisma.ShareLinkDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ShareLinkPayload>
+          }
+          update: {
+            args: Prisma.ShareLinkUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ShareLinkPayload>
+          }
+          deleteMany: {
+            args: Prisma.ShareLinkDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ShareLinkUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.ShareLinkUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ShareLinkPayload>[]
+          }
+          upsert: {
+            args: Prisma.ShareLinkUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ShareLinkPayload>
+          }
+          aggregate: {
+            args: Prisma.ShareLinkAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateShareLink>
+          }
+          groupBy: {
+            args: Prisma.ShareLinkGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ShareLinkGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ShareLinkCountArgs<ExtArgs>
+            result: $Utils.Optional<ShareLinkCountAggregateOutputType> | number
           }
         }
       }
@@ -1525,6 +1615,7 @@ export namespace Prisma {
     user?: UserOmit
     document?: DocumentOmit
     documentCollaborator?: DocumentCollaboratorOmit
+    shareLink?: ShareLinkOmit
     documentVersion?: DocumentVersionOmit
     comment?: CommentOmit
     commentReply?: CommentReplyOmit
@@ -1697,6 +1788,7 @@ export namespace Prisma {
 
   export type DocumentCountOutputType = {
     collaborators: number
+    shareLinks: number
     versions: number
     comments: number
     activities: number
@@ -1704,6 +1796,7 @@ export namespace Prisma {
 
   export type DocumentCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     collaborators?: boolean | DocumentCountOutputTypeCountCollaboratorsArgs
+    shareLinks?: boolean | DocumentCountOutputTypeCountShareLinksArgs
     versions?: boolean | DocumentCountOutputTypeCountVersionsArgs
     comments?: boolean | DocumentCountOutputTypeCountCommentsArgs
     activities?: boolean | DocumentCountOutputTypeCountActivitiesArgs
@@ -1725,6 +1818,13 @@ export namespace Prisma {
    */
   export type DocumentCountOutputTypeCountCollaboratorsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: DocumentCollaboratorWhereInput
+  }
+
+  /**
+   * DocumentCountOutputType without action
+   */
+  export type DocumentCountOutputTypeCountShareLinksArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ShareLinkWhereInput
   }
 
   /**
@@ -3218,6 +3318,7 @@ export namespace Prisma {
     updatedAt?: boolean
     owner?: boolean | UserDefaultArgs<ExtArgs>
     collaborators?: boolean | Document$collaboratorsArgs<ExtArgs>
+    shareLinks?: boolean | Document$shareLinksArgs<ExtArgs>
     versions?: boolean | Document$versionsArgs<ExtArgs>
     comments?: boolean | Document$commentsArgs<ExtArgs>
     activities?: boolean | Document$activitiesArgs<ExtArgs>
@@ -3260,6 +3361,7 @@ export namespace Prisma {
   export type DocumentInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     owner?: boolean | UserDefaultArgs<ExtArgs>
     collaborators?: boolean | Document$collaboratorsArgs<ExtArgs>
+    shareLinks?: boolean | Document$shareLinksArgs<ExtArgs>
     versions?: boolean | Document$versionsArgs<ExtArgs>
     comments?: boolean | Document$commentsArgs<ExtArgs>
     activities?: boolean | Document$activitiesArgs<ExtArgs>
@@ -3277,6 +3379,7 @@ export namespace Prisma {
     objects: {
       owner: Prisma.$UserPayload<ExtArgs>
       collaborators: Prisma.$DocumentCollaboratorPayload<ExtArgs>[]
+      shareLinks: Prisma.$ShareLinkPayload<ExtArgs>[]
       versions: Prisma.$DocumentVersionPayload<ExtArgs>[]
       comments: Prisma.$CommentPayload<ExtArgs>[]
       activities: Prisma.$ActivityLogPayload<ExtArgs>[]
@@ -3685,6 +3788,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     owner<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     collaborators<T extends Document$collaboratorsArgs<ExtArgs> = {}>(args?: Subset<T, Document$collaboratorsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DocumentCollaboratorPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    shareLinks<T extends Document$shareLinksArgs<ExtArgs> = {}>(args?: Subset<T, Document$shareLinksArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     versions<T extends Document$versionsArgs<ExtArgs> = {}>(args?: Subset<T, Document$versionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DocumentVersionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     comments<T extends Document$commentsArgs<ExtArgs> = {}>(args?: Subset<T, Document$commentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CommentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     activities<T extends Document$activitiesArgs<ExtArgs> = {}>(args?: Subset<T, Document$activitiesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ActivityLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -4146,6 +4250,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: DocumentCollaboratorScalarFieldEnum | DocumentCollaboratorScalarFieldEnum[]
+  }
+
+  /**
+   * Document.shareLinks
+   */
+  export type Document$shareLinksArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+    where?: ShareLinkWhereInput
+    orderBy?: ShareLinkOrderByWithRelationInput | ShareLinkOrderByWithRelationInput[]
+    cursor?: ShareLinkWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ShareLinkScalarFieldEnum | ShareLinkScalarFieldEnum[]
   }
 
   /**
@@ -5311,6 +5439,1082 @@ export namespace Prisma {
 
 
   /**
+   * Model ShareLink
+   */
+
+  export type AggregateShareLink = {
+    _count: ShareLinkCountAggregateOutputType | null
+    _min: ShareLinkMinAggregateOutputType | null
+    _max: ShareLinkMaxAggregateOutputType | null
+  }
+
+  export type ShareLinkMinAggregateOutputType = {
+    id: string | null
+    documentId: string | null
+    token: string | null
+    role: string | null
+    expiresAt: Date | null
+    createdAt: Date | null
+  }
+
+  export type ShareLinkMaxAggregateOutputType = {
+    id: string | null
+    documentId: string | null
+    token: string | null
+    role: string | null
+    expiresAt: Date | null
+    createdAt: Date | null
+  }
+
+  export type ShareLinkCountAggregateOutputType = {
+    id: number
+    documentId: number
+    token: number
+    role: number
+    expiresAt: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type ShareLinkMinAggregateInputType = {
+    id?: true
+    documentId?: true
+    token?: true
+    role?: true
+    expiresAt?: true
+    createdAt?: true
+  }
+
+  export type ShareLinkMaxAggregateInputType = {
+    id?: true
+    documentId?: true
+    token?: true
+    role?: true
+    expiresAt?: true
+    createdAt?: true
+  }
+
+  export type ShareLinkCountAggregateInputType = {
+    id?: true
+    documentId?: true
+    token?: true
+    role?: true
+    expiresAt?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type ShareLinkAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ShareLink to aggregate.
+     */
+    where?: ShareLinkWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ShareLinks to fetch.
+     */
+    orderBy?: ShareLinkOrderByWithRelationInput | ShareLinkOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ShareLinkWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ShareLinks from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ShareLinks.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ShareLinks
+    **/
+    _count?: true | ShareLinkCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ShareLinkMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ShareLinkMaxAggregateInputType
+  }
+
+  export type GetShareLinkAggregateType<T extends ShareLinkAggregateArgs> = {
+        [P in keyof T & keyof AggregateShareLink]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateShareLink[P]>
+      : GetScalarType<T[P], AggregateShareLink[P]>
+  }
+
+
+
+
+  export type ShareLinkGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ShareLinkWhereInput
+    orderBy?: ShareLinkOrderByWithAggregationInput | ShareLinkOrderByWithAggregationInput[]
+    by: ShareLinkScalarFieldEnum[] | ShareLinkScalarFieldEnum
+    having?: ShareLinkScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ShareLinkCountAggregateInputType | true
+    _min?: ShareLinkMinAggregateInputType
+    _max?: ShareLinkMaxAggregateInputType
+  }
+
+  export type ShareLinkGroupByOutputType = {
+    id: string
+    documentId: string
+    token: string
+    role: string
+    expiresAt: Date | null
+    createdAt: Date
+    _count: ShareLinkCountAggregateOutputType | null
+    _min: ShareLinkMinAggregateOutputType | null
+    _max: ShareLinkMaxAggregateOutputType | null
+  }
+
+  type GetShareLinkGroupByPayload<T extends ShareLinkGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ShareLinkGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ShareLinkGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ShareLinkGroupByOutputType[P]>
+            : GetScalarType<T[P], ShareLinkGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ShareLinkSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    documentId?: boolean
+    token?: boolean
+    role?: boolean
+    expiresAt?: boolean
+    createdAt?: boolean
+    document?: boolean | DocumentDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["shareLink"]>
+
+  export type ShareLinkSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    documentId?: boolean
+    token?: boolean
+    role?: boolean
+    expiresAt?: boolean
+    createdAt?: boolean
+    document?: boolean | DocumentDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["shareLink"]>
+
+  export type ShareLinkSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    documentId?: boolean
+    token?: boolean
+    role?: boolean
+    expiresAt?: boolean
+    createdAt?: boolean
+    document?: boolean | DocumentDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["shareLink"]>
+
+  export type ShareLinkSelectScalar = {
+    id?: boolean
+    documentId?: boolean
+    token?: boolean
+    role?: boolean
+    expiresAt?: boolean
+    createdAt?: boolean
+  }
+
+  export type ShareLinkOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "documentId" | "token" | "role" | "expiresAt" | "createdAt", ExtArgs["result"]["shareLink"]>
+  export type ShareLinkInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    document?: boolean | DocumentDefaultArgs<ExtArgs>
+  }
+  export type ShareLinkIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    document?: boolean | DocumentDefaultArgs<ExtArgs>
+  }
+  export type ShareLinkIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    document?: boolean | DocumentDefaultArgs<ExtArgs>
+  }
+
+  export type $ShareLinkPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ShareLink"
+    objects: {
+      document: Prisma.$DocumentPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      documentId: string
+      token: string
+      role: string
+      expiresAt: Date | null
+      createdAt: Date
+    }, ExtArgs["result"]["shareLink"]>
+    composites: {}
+  }
+
+  type ShareLinkGetPayload<S extends boolean | null | undefined | ShareLinkDefaultArgs> = $Result.GetResult<Prisma.$ShareLinkPayload, S>
+
+  type ShareLinkCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<ShareLinkFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: ShareLinkCountAggregateInputType | true
+    }
+
+  export interface ShareLinkDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ShareLink'], meta: { name: 'ShareLink' } }
+    /**
+     * Find zero or one ShareLink that matches the filter.
+     * @param {ShareLinkFindUniqueArgs} args - Arguments to find a ShareLink
+     * @example
+     * // Get one ShareLink
+     * const shareLink = await prisma.shareLink.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ShareLinkFindUniqueArgs>(args: SelectSubset<T, ShareLinkFindUniqueArgs<ExtArgs>>): Prisma__ShareLinkClient<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one ShareLink that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {ShareLinkFindUniqueOrThrowArgs} args - Arguments to find a ShareLink
+     * @example
+     * // Get one ShareLink
+     * const shareLink = await prisma.shareLink.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ShareLinkFindUniqueOrThrowArgs>(args: SelectSubset<T, ShareLinkFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ShareLinkClient<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ShareLink that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ShareLinkFindFirstArgs} args - Arguments to find a ShareLink
+     * @example
+     * // Get one ShareLink
+     * const shareLink = await prisma.shareLink.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ShareLinkFindFirstArgs>(args?: SelectSubset<T, ShareLinkFindFirstArgs<ExtArgs>>): Prisma__ShareLinkClient<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ShareLink that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ShareLinkFindFirstOrThrowArgs} args - Arguments to find a ShareLink
+     * @example
+     * // Get one ShareLink
+     * const shareLink = await prisma.shareLink.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ShareLinkFindFirstOrThrowArgs>(args?: SelectSubset<T, ShareLinkFindFirstOrThrowArgs<ExtArgs>>): Prisma__ShareLinkClient<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more ShareLinks that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ShareLinkFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ShareLinks
+     * const shareLinks = await prisma.shareLink.findMany()
+     * 
+     * // Get first 10 ShareLinks
+     * const shareLinks = await prisma.shareLink.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const shareLinkWithIdOnly = await prisma.shareLink.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ShareLinkFindManyArgs>(args?: SelectSubset<T, ShareLinkFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a ShareLink.
+     * @param {ShareLinkCreateArgs} args - Arguments to create a ShareLink.
+     * @example
+     * // Create one ShareLink
+     * const ShareLink = await prisma.shareLink.create({
+     *   data: {
+     *     // ... data to create a ShareLink
+     *   }
+     * })
+     * 
+     */
+    create<T extends ShareLinkCreateArgs>(args: SelectSubset<T, ShareLinkCreateArgs<ExtArgs>>): Prisma__ShareLinkClient<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many ShareLinks.
+     * @param {ShareLinkCreateManyArgs} args - Arguments to create many ShareLinks.
+     * @example
+     * // Create many ShareLinks
+     * const shareLink = await prisma.shareLink.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ShareLinkCreateManyArgs>(args?: SelectSubset<T, ShareLinkCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ShareLinks and returns the data saved in the database.
+     * @param {ShareLinkCreateManyAndReturnArgs} args - Arguments to create many ShareLinks.
+     * @example
+     * // Create many ShareLinks
+     * const shareLink = await prisma.shareLink.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ShareLinks and only return the `id`
+     * const shareLinkWithIdOnly = await prisma.shareLink.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ShareLinkCreateManyAndReturnArgs>(args?: SelectSubset<T, ShareLinkCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a ShareLink.
+     * @param {ShareLinkDeleteArgs} args - Arguments to delete one ShareLink.
+     * @example
+     * // Delete one ShareLink
+     * const ShareLink = await prisma.shareLink.delete({
+     *   where: {
+     *     // ... filter to delete one ShareLink
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ShareLinkDeleteArgs>(args: SelectSubset<T, ShareLinkDeleteArgs<ExtArgs>>): Prisma__ShareLinkClient<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one ShareLink.
+     * @param {ShareLinkUpdateArgs} args - Arguments to update one ShareLink.
+     * @example
+     * // Update one ShareLink
+     * const shareLink = await prisma.shareLink.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ShareLinkUpdateArgs>(args: SelectSubset<T, ShareLinkUpdateArgs<ExtArgs>>): Prisma__ShareLinkClient<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more ShareLinks.
+     * @param {ShareLinkDeleteManyArgs} args - Arguments to filter ShareLinks to delete.
+     * @example
+     * // Delete a few ShareLinks
+     * const { count } = await prisma.shareLink.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ShareLinkDeleteManyArgs>(args?: SelectSubset<T, ShareLinkDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ShareLinks.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ShareLinkUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ShareLinks
+     * const shareLink = await prisma.shareLink.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ShareLinkUpdateManyArgs>(args: SelectSubset<T, ShareLinkUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ShareLinks and returns the data updated in the database.
+     * @param {ShareLinkUpdateManyAndReturnArgs} args - Arguments to update many ShareLinks.
+     * @example
+     * // Update many ShareLinks
+     * const shareLink = await prisma.shareLink.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more ShareLinks and only return the `id`
+     * const shareLinkWithIdOnly = await prisma.shareLink.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends ShareLinkUpdateManyAndReturnArgs>(args: SelectSubset<T, ShareLinkUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one ShareLink.
+     * @param {ShareLinkUpsertArgs} args - Arguments to update or create a ShareLink.
+     * @example
+     * // Update or create a ShareLink
+     * const shareLink = await prisma.shareLink.upsert({
+     *   create: {
+     *     // ... data to create a ShareLink
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ShareLink we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ShareLinkUpsertArgs>(args: SelectSubset<T, ShareLinkUpsertArgs<ExtArgs>>): Prisma__ShareLinkClient<$Result.GetResult<Prisma.$ShareLinkPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of ShareLinks.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ShareLinkCountArgs} args - Arguments to filter ShareLinks to count.
+     * @example
+     * // Count the number of ShareLinks
+     * const count = await prisma.shareLink.count({
+     *   where: {
+     *     // ... the filter for the ShareLinks we want to count
+     *   }
+     * })
+    **/
+    count<T extends ShareLinkCountArgs>(
+      args?: Subset<T, ShareLinkCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ShareLinkCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ShareLink.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ShareLinkAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ShareLinkAggregateArgs>(args: Subset<T, ShareLinkAggregateArgs>): Prisma.PrismaPromise<GetShareLinkAggregateType<T>>
+
+    /**
+     * Group by ShareLink.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ShareLinkGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ShareLinkGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ShareLinkGroupByArgs['orderBy'] }
+        : { orderBy?: ShareLinkGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ShareLinkGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetShareLinkGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ShareLink model
+   */
+  readonly fields: ShareLinkFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ShareLink.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ShareLinkClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    document<T extends DocumentDefaultArgs<ExtArgs> = {}>(args?: Subset<T, DocumentDefaultArgs<ExtArgs>>): Prisma__DocumentClient<$Result.GetResult<Prisma.$DocumentPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ShareLink model
+   */
+  interface ShareLinkFieldRefs {
+    readonly id: FieldRef<"ShareLink", 'String'>
+    readonly documentId: FieldRef<"ShareLink", 'String'>
+    readonly token: FieldRef<"ShareLink", 'String'>
+    readonly role: FieldRef<"ShareLink", 'String'>
+    readonly expiresAt: FieldRef<"ShareLink", 'DateTime'>
+    readonly createdAt: FieldRef<"ShareLink", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ShareLink findUnique
+   */
+  export type ShareLinkFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+    /**
+     * Filter, which ShareLink to fetch.
+     */
+    where: ShareLinkWhereUniqueInput
+  }
+
+  /**
+   * ShareLink findUniqueOrThrow
+   */
+  export type ShareLinkFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+    /**
+     * Filter, which ShareLink to fetch.
+     */
+    where: ShareLinkWhereUniqueInput
+  }
+
+  /**
+   * ShareLink findFirst
+   */
+  export type ShareLinkFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+    /**
+     * Filter, which ShareLink to fetch.
+     */
+    where?: ShareLinkWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ShareLinks to fetch.
+     */
+    orderBy?: ShareLinkOrderByWithRelationInput | ShareLinkOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ShareLinks.
+     */
+    cursor?: ShareLinkWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ShareLinks from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ShareLinks.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ShareLinks.
+     */
+    distinct?: ShareLinkScalarFieldEnum | ShareLinkScalarFieldEnum[]
+  }
+
+  /**
+   * ShareLink findFirstOrThrow
+   */
+  export type ShareLinkFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+    /**
+     * Filter, which ShareLink to fetch.
+     */
+    where?: ShareLinkWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ShareLinks to fetch.
+     */
+    orderBy?: ShareLinkOrderByWithRelationInput | ShareLinkOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ShareLinks.
+     */
+    cursor?: ShareLinkWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ShareLinks from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ShareLinks.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ShareLinks.
+     */
+    distinct?: ShareLinkScalarFieldEnum | ShareLinkScalarFieldEnum[]
+  }
+
+  /**
+   * ShareLink findMany
+   */
+  export type ShareLinkFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+    /**
+     * Filter, which ShareLinks to fetch.
+     */
+    where?: ShareLinkWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ShareLinks to fetch.
+     */
+    orderBy?: ShareLinkOrderByWithRelationInput | ShareLinkOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ShareLinks.
+     */
+    cursor?: ShareLinkWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ShareLinks from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ShareLinks.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ShareLinks.
+     */
+    distinct?: ShareLinkScalarFieldEnum | ShareLinkScalarFieldEnum[]
+  }
+
+  /**
+   * ShareLink create
+   */
+  export type ShareLinkCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ShareLink.
+     */
+    data: XOR<ShareLinkCreateInput, ShareLinkUncheckedCreateInput>
+  }
+
+  /**
+   * ShareLink createMany
+   */
+  export type ShareLinkCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ShareLinks.
+     */
+    data: ShareLinkCreateManyInput | ShareLinkCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ShareLink createManyAndReturn
+   */
+  export type ShareLinkCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * The data used to create many ShareLinks.
+     */
+    data: ShareLinkCreateManyInput | ShareLinkCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * ShareLink update
+   */
+  export type ShareLinkUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ShareLink.
+     */
+    data: XOR<ShareLinkUpdateInput, ShareLinkUncheckedUpdateInput>
+    /**
+     * Choose, which ShareLink to update.
+     */
+    where: ShareLinkWhereUniqueInput
+  }
+
+  /**
+   * ShareLink updateMany
+   */
+  export type ShareLinkUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ShareLinks.
+     */
+    data: XOR<ShareLinkUpdateManyMutationInput, ShareLinkUncheckedUpdateManyInput>
+    /**
+     * Filter which ShareLinks to update
+     */
+    where?: ShareLinkWhereInput
+    /**
+     * Limit how many ShareLinks to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * ShareLink updateManyAndReturn
+   */
+  export type ShareLinkUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * The data used to update ShareLinks.
+     */
+    data: XOR<ShareLinkUpdateManyMutationInput, ShareLinkUncheckedUpdateManyInput>
+    /**
+     * Filter which ShareLinks to update
+     */
+    where?: ShareLinkWhereInput
+    /**
+     * Limit how many ShareLinks to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * ShareLink upsert
+   */
+  export type ShareLinkUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ShareLink to update in case it exists.
+     */
+    where: ShareLinkWhereUniqueInput
+    /**
+     * In case the ShareLink found by the `where` argument doesn't exist, create a new ShareLink with this data.
+     */
+    create: XOR<ShareLinkCreateInput, ShareLinkUncheckedCreateInput>
+    /**
+     * In case the ShareLink was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ShareLinkUpdateInput, ShareLinkUncheckedUpdateInput>
+  }
+
+  /**
+   * ShareLink delete
+   */
+  export type ShareLinkDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+    /**
+     * Filter which ShareLink to delete.
+     */
+    where: ShareLinkWhereUniqueInput
+  }
+
+  /**
+   * ShareLink deleteMany
+   */
+  export type ShareLinkDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ShareLinks to delete
+     */
+    where?: ShareLinkWhereInput
+    /**
+     * Limit how many ShareLinks to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * ShareLink without action
+   */
+  export type ShareLinkDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ShareLink
+     */
+    select?: ShareLinkSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ShareLink
+     */
+    omit?: ShareLinkOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ShareLinkInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Model DocumentVersion
    */
 
@@ -6421,7 +7625,7 @@ export namespace Prisma {
     id: string | null
     documentId: string | null
     authorId: string | null
-    body: string | null
+    content: string | null
     isResolved: boolean | null
     createdAt: Date | null
   }
@@ -6430,7 +7634,7 @@ export namespace Prisma {
     id: string | null
     documentId: string | null
     authorId: string | null
-    body: string | null
+    content: string | null
     isResolved: boolean | null
     createdAt: Date | null
   }
@@ -6439,7 +7643,7 @@ export namespace Prisma {
     id: number
     documentId: number
     authorId: number
-    body: number
+    content: number
     anchorData: number
     isResolved: number
     createdAt: number
@@ -6451,7 +7655,7 @@ export namespace Prisma {
     id?: true
     documentId?: true
     authorId?: true
-    body?: true
+    content?: true
     isResolved?: true
     createdAt?: true
   }
@@ -6460,7 +7664,7 @@ export namespace Prisma {
     id?: true
     documentId?: true
     authorId?: true
-    body?: true
+    content?: true
     isResolved?: true
     createdAt?: true
   }
@@ -6469,7 +7673,7 @@ export namespace Prisma {
     id?: true
     documentId?: true
     authorId?: true
-    body?: true
+    content?: true
     anchorData?: true
     isResolved?: true
     createdAt?: true
@@ -6552,7 +7756,7 @@ export namespace Prisma {
     id: string
     documentId: string
     authorId: string
-    body: string
+    content: string
     anchorData: JsonValue | null
     isResolved: boolean
     createdAt: Date
@@ -6579,7 +7783,7 @@ export namespace Prisma {
     id?: boolean
     documentId?: boolean
     authorId?: boolean
-    body?: boolean
+    content?: boolean
     anchorData?: boolean
     isResolved?: boolean
     createdAt?: boolean
@@ -6594,7 +7798,7 @@ export namespace Prisma {
     id?: boolean
     documentId?: boolean
     authorId?: boolean
-    body?: boolean
+    content?: boolean
     anchorData?: boolean
     isResolved?: boolean
     createdAt?: boolean
@@ -6606,7 +7810,7 @@ export namespace Prisma {
     id?: boolean
     documentId?: boolean
     authorId?: boolean
-    body?: boolean
+    content?: boolean
     anchorData?: boolean
     isResolved?: boolean
     createdAt?: boolean
@@ -6618,13 +7822,13 @@ export namespace Prisma {
     id?: boolean
     documentId?: boolean
     authorId?: boolean
-    body?: boolean
+    content?: boolean
     anchorData?: boolean
     isResolved?: boolean
     createdAt?: boolean
   }
 
-  export type CommentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "documentId" | "authorId" | "body" | "anchorData" | "isResolved" | "createdAt", ExtArgs["result"]["comment"]>
+  export type CommentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "documentId" | "authorId" | "content" | "anchorData" | "isResolved" | "createdAt", ExtArgs["result"]["comment"]>
   export type CommentInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     document?: boolean | DocumentDefaultArgs<ExtArgs>
     author?: boolean | UserDefaultArgs<ExtArgs>
@@ -6653,7 +7857,7 @@ export namespace Prisma {
       id: string
       documentId: string
       authorId: string
-      body: string
+      content: string
       anchorData: Prisma.JsonValue | null
       isResolved: boolean
       createdAt: Date
@@ -7087,7 +8291,7 @@ export namespace Prisma {
     readonly id: FieldRef<"Comment", 'String'>
     readonly documentId: FieldRef<"Comment", 'String'>
     readonly authorId: FieldRef<"Comment", 'String'>
-    readonly body: FieldRef<"Comment", 'String'>
+    readonly content: FieldRef<"Comment", 'String'>
     readonly anchorData: FieldRef<"Comment", 'Json'>
     readonly isResolved: FieldRef<"Comment", 'Boolean'>
     readonly createdAt: FieldRef<"Comment", 'DateTime'>
@@ -7572,7 +8776,7 @@ export namespace Prisma {
     id: string | null
     commentId: string | null
     authorId: string | null
-    body: string | null
+    content: string | null
     createdAt: Date | null
   }
 
@@ -7580,7 +8784,7 @@ export namespace Prisma {
     id: string | null
     commentId: string | null
     authorId: string | null
-    body: string | null
+    content: string | null
     createdAt: Date | null
   }
 
@@ -7588,7 +8792,7 @@ export namespace Prisma {
     id: number
     commentId: number
     authorId: number
-    body: number
+    content: number
     createdAt: number
     _all: number
   }
@@ -7598,7 +8802,7 @@ export namespace Prisma {
     id?: true
     commentId?: true
     authorId?: true
-    body?: true
+    content?: true
     createdAt?: true
   }
 
@@ -7606,7 +8810,7 @@ export namespace Prisma {
     id?: true
     commentId?: true
     authorId?: true
-    body?: true
+    content?: true
     createdAt?: true
   }
 
@@ -7614,7 +8818,7 @@ export namespace Prisma {
     id?: true
     commentId?: true
     authorId?: true
-    body?: true
+    content?: true
     createdAt?: true
     _all?: true
   }
@@ -7695,7 +8899,7 @@ export namespace Prisma {
     id: string
     commentId: string
     authorId: string
-    body: string
+    content: string
     createdAt: Date
     _count: CommentReplyCountAggregateOutputType | null
     _min: CommentReplyMinAggregateOutputType | null
@@ -7720,7 +8924,7 @@ export namespace Prisma {
     id?: boolean
     commentId?: boolean
     authorId?: boolean
-    body?: boolean
+    content?: boolean
     createdAt?: boolean
     comment?: boolean | CommentDefaultArgs<ExtArgs>
     author?: boolean | UserDefaultArgs<ExtArgs>
@@ -7730,7 +8934,7 @@ export namespace Prisma {
     id?: boolean
     commentId?: boolean
     authorId?: boolean
-    body?: boolean
+    content?: boolean
     createdAt?: boolean
     comment?: boolean | CommentDefaultArgs<ExtArgs>
     author?: boolean | UserDefaultArgs<ExtArgs>
@@ -7740,7 +8944,7 @@ export namespace Prisma {
     id?: boolean
     commentId?: boolean
     authorId?: boolean
-    body?: boolean
+    content?: boolean
     createdAt?: boolean
     comment?: boolean | CommentDefaultArgs<ExtArgs>
     author?: boolean | UserDefaultArgs<ExtArgs>
@@ -7750,11 +8954,11 @@ export namespace Prisma {
     id?: boolean
     commentId?: boolean
     authorId?: boolean
-    body?: boolean
+    content?: boolean
     createdAt?: boolean
   }
 
-  export type CommentReplyOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "commentId" | "authorId" | "body" | "createdAt", ExtArgs["result"]["commentReply"]>
+  export type CommentReplyOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "commentId" | "authorId" | "content" | "createdAt", ExtArgs["result"]["commentReply"]>
   export type CommentReplyInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     comment?: boolean | CommentDefaultArgs<ExtArgs>
     author?: boolean | UserDefaultArgs<ExtArgs>
@@ -7778,7 +8982,7 @@ export namespace Prisma {
       id: string
       commentId: string
       authorId: string
-      body: string
+      content: string
       createdAt: Date
     }, ExtArgs["result"]["commentReply"]>
     composites: {}
@@ -8208,7 +9412,7 @@ export namespace Prisma {
     readonly id: FieldRef<"CommentReply", 'String'>
     readonly commentId: FieldRef<"CommentReply", 'String'>
     readonly authorId: FieldRef<"CommentReply", 'String'>
-    readonly body: FieldRef<"CommentReply", 'String'>
+    readonly content: FieldRef<"CommentReply", 'String'>
     readonly createdAt: FieldRef<"CommentReply", 'DateTime'>
   }
     
@@ -11898,6 +13102,18 @@ export namespace Prisma {
   export type DocumentCollaboratorScalarFieldEnum = (typeof DocumentCollaboratorScalarFieldEnum)[keyof typeof DocumentCollaboratorScalarFieldEnum]
 
 
+  export const ShareLinkScalarFieldEnum: {
+    id: 'id',
+    documentId: 'documentId',
+    token: 'token',
+    role: 'role',
+    expiresAt: 'expiresAt',
+    createdAt: 'createdAt'
+  };
+
+  export type ShareLinkScalarFieldEnum = (typeof ShareLinkScalarFieldEnum)[keyof typeof ShareLinkScalarFieldEnum]
+
+
   export const DocumentVersionScalarFieldEnum: {
     id: 'id',
     documentId: 'documentId',
@@ -11913,7 +13129,7 @@ export namespace Prisma {
     id: 'id',
     documentId: 'documentId',
     authorId: 'authorId',
-    body: 'body',
+    content: 'content',
     anchorData: 'anchorData',
     isResolved: 'isResolved',
     createdAt: 'createdAt'
@@ -11926,7 +13142,7 @@ export namespace Prisma {
     id: 'id',
     commentId: 'commentId',
     authorId: 'authorId',
-    body: 'body',
+    content: 'content',
     createdAt: 'createdAt'
   };
 
@@ -12206,6 +13422,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"Document"> | Date | string
     owner?: XOR<UserScalarRelationFilter, UserWhereInput>
     collaborators?: DocumentCollaboratorListRelationFilter
+    shareLinks?: ShareLinkListRelationFilter
     versions?: DocumentVersionListRelationFilter
     comments?: CommentListRelationFilter
     activities?: ActivityLogListRelationFilter
@@ -12221,6 +13438,7 @@ export namespace Prisma {
     updatedAt?: SortOrder
     owner?: UserOrderByWithRelationInput
     collaborators?: DocumentCollaboratorOrderByRelationAggregateInput
+    shareLinks?: ShareLinkOrderByRelationAggregateInput
     versions?: DocumentVersionOrderByRelationAggregateInput
     comments?: CommentOrderByRelationAggregateInput
     activities?: ActivityLogOrderByRelationAggregateInput
@@ -12239,6 +13457,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"Document"> | Date | string
     owner?: XOR<UserScalarRelationFilter, UserWhereInput>
     collaborators?: DocumentCollaboratorListRelationFilter
+    shareLinks?: ShareLinkListRelationFilter
     versions?: DocumentVersionListRelationFilter
     comments?: CommentListRelationFilter
     activities?: ActivityLogListRelationFilter
@@ -12329,6 +13548,66 @@ export namespace Prisma {
     createdAt?: DateTimeWithAggregatesFilter<"DocumentCollaborator"> | Date | string
   }
 
+  export type ShareLinkWhereInput = {
+    AND?: ShareLinkWhereInput | ShareLinkWhereInput[]
+    OR?: ShareLinkWhereInput[]
+    NOT?: ShareLinkWhereInput | ShareLinkWhereInput[]
+    id?: StringFilter<"ShareLink"> | string
+    documentId?: StringFilter<"ShareLink"> | string
+    token?: StringFilter<"ShareLink"> | string
+    role?: StringFilter<"ShareLink"> | string
+    expiresAt?: DateTimeNullableFilter<"ShareLink"> | Date | string | null
+    createdAt?: DateTimeFilter<"ShareLink"> | Date | string
+    document?: XOR<DocumentScalarRelationFilter, DocumentWhereInput>
+  }
+
+  export type ShareLinkOrderByWithRelationInput = {
+    id?: SortOrder
+    documentId?: SortOrder
+    token?: SortOrder
+    role?: SortOrder
+    expiresAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    document?: DocumentOrderByWithRelationInput
+  }
+
+  export type ShareLinkWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    token?: string
+    AND?: ShareLinkWhereInput | ShareLinkWhereInput[]
+    OR?: ShareLinkWhereInput[]
+    NOT?: ShareLinkWhereInput | ShareLinkWhereInput[]
+    documentId?: StringFilter<"ShareLink"> | string
+    role?: StringFilter<"ShareLink"> | string
+    expiresAt?: DateTimeNullableFilter<"ShareLink"> | Date | string | null
+    createdAt?: DateTimeFilter<"ShareLink"> | Date | string
+    document?: XOR<DocumentScalarRelationFilter, DocumentWhereInput>
+  }, "id" | "token">
+
+  export type ShareLinkOrderByWithAggregationInput = {
+    id?: SortOrder
+    documentId?: SortOrder
+    token?: SortOrder
+    role?: SortOrder
+    expiresAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    _count?: ShareLinkCountOrderByAggregateInput
+    _max?: ShareLinkMaxOrderByAggregateInput
+    _min?: ShareLinkMinOrderByAggregateInput
+  }
+
+  export type ShareLinkScalarWhereWithAggregatesInput = {
+    AND?: ShareLinkScalarWhereWithAggregatesInput | ShareLinkScalarWhereWithAggregatesInput[]
+    OR?: ShareLinkScalarWhereWithAggregatesInput[]
+    NOT?: ShareLinkScalarWhereWithAggregatesInput | ShareLinkScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ShareLink"> | string
+    documentId?: StringWithAggregatesFilter<"ShareLink"> | string
+    token?: StringWithAggregatesFilter<"ShareLink"> | string
+    role?: StringWithAggregatesFilter<"ShareLink"> | string
+    expiresAt?: DateTimeNullableWithAggregatesFilter<"ShareLink"> | Date | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"ShareLink"> | Date | string
+  }
+
   export type DocumentVersionWhereInput = {
     AND?: DocumentVersionWhereInput | DocumentVersionWhereInput[]
     OR?: DocumentVersionWhereInput[]
@@ -12394,7 +13673,7 @@ export namespace Prisma {
     id?: StringFilter<"Comment"> | string
     documentId?: StringFilter<"Comment"> | string
     authorId?: StringFilter<"Comment"> | string
-    body?: StringFilter<"Comment"> | string
+    content?: StringFilter<"Comment"> | string
     anchorData?: JsonNullableFilter<"Comment">
     isResolved?: BoolFilter<"Comment"> | boolean
     createdAt?: DateTimeFilter<"Comment"> | Date | string
@@ -12408,7 +13687,7 @@ export namespace Prisma {
     id?: SortOrder
     documentId?: SortOrder
     authorId?: SortOrder
-    body?: SortOrder
+    content?: SortOrder
     anchorData?: SortOrderInput | SortOrder
     isResolved?: SortOrder
     createdAt?: SortOrder
@@ -12425,7 +13704,7 @@ export namespace Prisma {
     NOT?: CommentWhereInput | CommentWhereInput[]
     documentId?: StringFilter<"Comment"> | string
     authorId?: StringFilter<"Comment"> | string
-    body?: StringFilter<"Comment"> | string
+    content?: StringFilter<"Comment"> | string
     anchorData?: JsonNullableFilter<"Comment">
     isResolved?: BoolFilter<"Comment"> | boolean
     createdAt?: DateTimeFilter<"Comment"> | Date | string
@@ -12439,7 +13718,7 @@ export namespace Prisma {
     id?: SortOrder
     documentId?: SortOrder
     authorId?: SortOrder
-    body?: SortOrder
+    content?: SortOrder
     anchorData?: SortOrderInput | SortOrder
     isResolved?: SortOrder
     createdAt?: SortOrder
@@ -12455,7 +13734,7 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"Comment"> | string
     documentId?: StringWithAggregatesFilter<"Comment"> | string
     authorId?: StringWithAggregatesFilter<"Comment"> | string
-    body?: StringWithAggregatesFilter<"Comment"> | string
+    content?: StringWithAggregatesFilter<"Comment"> | string
     anchorData?: JsonNullableWithAggregatesFilter<"Comment">
     isResolved?: BoolWithAggregatesFilter<"Comment"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"Comment"> | Date | string
@@ -12468,7 +13747,7 @@ export namespace Prisma {
     id?: StringFilter<"CommentReply"> | string
     commentId?: StringFilter<"CommentReply"> | string
     authorId?: StringFilter<"CommentReply"> | string
-    body?: StringFilter<"CommentReply"> | string
+    content?: StringFilter<"CommentReply"> | string
     createdAt?: DateTimeFilter<"CommentReply"> | Date | string
     comment?: XOR<CommentScalarRelationFilter, CommentWhereInput>
     author?: XOR<UserScalarRelationFilter, UserWhereInput>
@@ -12478,7 +13757,7 @@ export namespace Prisma {
     id?: SortOrder
     commentId?: SortOrder
     authorId?: SortOrder
-    body?: SortOrder
+    content?: SortOrder
     createdAt?: SortOrder
     comment?: CommentOrderByWithRelationInput
     author?: UserOrderByWithRelationInput
@@ -12491,7 +13770,7 @@ export namespace Prisma {
     NOT?: CommentReplyWhereInput | CommentReplyWhereInput[]
     commentId?: StringFilter<"CommentReply"> | string
     authorId?: StringFilter<"CommentReply"> | string
-    body?: StringFilter<"CommentReply"> | string
+    content?: StringFilter<"CommentReply"> | string
     createdAt?: DateTimeFilter<"CommentReply"> | Date | string
     comment?: XOR<CommentScalarRelationFilter, CommentWhereInput>
     author?: XOR<UserScalarRelationFilter, UserWhereInput>
@@ -12501,7 +13780,7 @@ export namespace Prisma {
     id?: SortOrder
     commentId?: SortOrder
     authorId?: SortOrder
-    body?: SortOrder
+    content?: SortOrder
     createdAt?: SortOrder
     _count?: CommentReplyCountOrderByAggregateInput
     _max?: CommentReplyMaxOrderByAggregateInput
@@ -12515,7 +13794,7 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"CommentReply"> | string
     commentId?: StringWithAggregatesFilter<"CommentReply"> | string
     authorId?: StringWithAggregatesFilter<"CommentReply"> | string
-    body?: StringWithAggregatesFilter<"CommentReply"> | string
+    content?: StringWithAggregatesFilter<"CommentReply"> | string
     createdAt?: DateTimeWithAggregatesFilter<"CommentReply"> | Date | string
   }
 
@@ -12783,6 +14062,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     owner: UserCreateNestedOneWithoutDocumentsInput
     collaborators?: DocumentCollaboratorCreateNestedManyWithoutDocumentInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutDocumentInput
     versions?: DocumentVersionCreateNestedManyWithoutDocumentInput
     comments?: CommentCreateNestedManyWithoutDocumentInput
     activities?: ActivityLogCreateNestedManyWithoutDocumentInput
@@ -12797,6 +14077,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     collaborators?: DocumentCollaboratorUncheckedCreateNestedManyWithoutDocumentInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutDocumentInput
     versions?: DocumentVersionUncheckedCreateNestedManyWithoutDocumentInput
     comments?: CommentUncheckedCreateNestedManyWithoutDocumentInput
     activities?: ActivityLogUncheckedCreateNestedManyWithoutDocumentInput
@@ -12811,6 +14092,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     owner?: UserUpdateOneRequiredWithoutDocumentsNestedInput
     collaborators?: DocumentCollaboratorUpdateManyWithoutDocumentNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutDocumentNestedInput
     versions?: DocumentVersionUpdateManyWithoutDocumentNestedInput
     comments?: CommentUpdateManyWithoutDocumentNestedInput
     activities?: ActivityLogUpdateManyWithoutDocumentNestedInput
@@ -12825,6 +14107,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     collaborators?: DocumentCollaboratorUncheckedUpdateManyWithoutDocumentNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutDocumentNestedInput
     versions?: DocumentVersionUncheckedUpdateManyWithoutDocumentNestedInput
     comments?: CommentUncheckedUpdateManyWithoutDocumentNestedInput
     activities?: ActivityLogUncheckedUpdateManyWithoutDocumentNestedInput
@@ -12913,6 +14196,68 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type ShareLinkCreateInput = {
+    id?: string
+    token: string
+    role?: string
+    expiresAt?: Date | string | null
+    createdAt?: Date | string
+    document: DocumentCreateNestedOneWithoutShareLinksInput
+  }
+
+  export type ShareLinkUncheckedCreateInput = {
+    id?: string
+    documentId: string
+    token: string
+    role?: string
+    expiresAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
+  export type ShareLinkUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    document?: DocumentUpdateOneRequiredWithoutShareLinksNestedInput
+  }
+
+  export type ShareLinkUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    documentId?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ShareLinkCreateManyInput = {
+    id?: string
+    documentId: string
+    token: string
+    role?: string
+    expiresAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
+  export type ShareLinkUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ShareLinkUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    documentId?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type DocumentVersionCreateInput = {
     id?: string
     content: string
@@ -12970,7 +14315,7 @@ export namespace Prisma {
 
   export type CommentCreateInput = {
     id?: string
-    body: string
+    content: string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: boolean
     createdAt?: Date | string
@@ -12984,7 +14329,7 @@ export namespace Prisma {
     id?: string
     documentId: string
     authorId: string
-    body: string
+    content: string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: boolean
     createdAt?: Date | string
@@ -12994,7 +14339,7 @@ export namespace Prisma {
 
   export type CommentUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -13008,7 +14353,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     documentId?: StringFieldUpdateOperationsInput | string
     authorId?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -13020,7 +14365,7 @@ export namespace Prisma {
     id?: string
     documentId: string
     authorId: string
-    body: string
+    content: string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: boolean
     createdAt?: Date | string
@@ -13028,7 +14373,7 @@ export namespace Prisma {
 
   export type CommentUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -13038,7 +14383,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     documentId?: StringFieldUpdateOperationsInput | string
     authorId?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -13046,7 +14391,7 @@ export namespace Prisma {
 
   export type CommentReplyCreateInput = {
     id?: string
-    body: string
+    content: string
     createdAt?: Date | string
     comment: CommentCreateNestedOneWithoutRepliesInput
     author: UserCreateNestedOneWithoutRepliesInput
@@ -13056,13 +14401,13 @@ export namespace Prisma {
     id?: string
     commentId: string
     authorId: string
-    body: string
+    content: string
     createdAt?: Date | string
   }
 
   export type CommentReplyUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     comment?: CommentUpdateOneRequiredWithoutRepliesNestedInput
     author?: UserUpdateOneRequiredWithoutRepliesNestedInput
@@ -13072,7 +14417,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     commentId?: StringFieldUpdateOperationsInput | string
     authorId?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -13080,13 +14425,13 @@ export namespace Prisma {
     id?: string
     commentId: string
     authorId: string
-    body: string
+    content: string
     createdAt?: Date | string
   }
 
   export type CommentReplyUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -13094,7 +14439,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     commentId?: StringFieldUpdateOperationsInput | string
     authorId?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -13442,6 +14787,12 @@ export namespace Prisma {
     isNot?: UserWhereInput
   }
 
+  export type ShareLinkListRelationFilter = {
+    every?: ShareLinkWhereInput
+    some?: ShareLinkWhereInput
+    none?: ShareLinkWhereInput
+  }
+
   export type DocumentVersionListRelationFilter = {
     every?: DocumentVersionWhereInput
     some?: DocumentVersionWhereInput
@@ -13451,6 +14802,10 @@ export namespace Prisma {
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
+  }
+
+  export type ShareLinkOrderByRelationAggregateInput = {
+    _count?: SortOrder
   }
 
   export type DocumentVersionOrderByRelationAggregateInput = {
@@ -13529,6 +14884,58 @@ export namespace Prisma {
     userId?: SortOrder
     role?: SortOrder
     createdAt?: SortOrder
+  }
+
+  export type DateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
+  export type ShareLinkCountOrderByAggregateInput = {
+    id?: SortOrder
+    documentId?: SortOrder
+    token?: SortOrder
+    role?: SortOrder
+    expiresAt?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type ShareLinkMaxOrderByAggregateInput = {
+    id?: SortOrder
+    documentId?: SortOrder
+    token?: SortOrder
+    role?: SortOrder
+    expiresAt?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type ShareLinkMinOrderByAggregateInput = {
+    id?: SortOrder
+    documentId?: SortOrder
+    token?: SortOrder
+    role?: SortOrder
+    expiresAt?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type IntFilter<$PrismaModel = never> = {
@@ -13627,7 +15034,7 @@ export namespace Prisma {
     id?: SortOrder
     documentId?: SortOrder
     authorId?: SortOrder
-    body?: SortOrder
+    content?: SortOrder
     anchorData?: SortOrder
     isResolved?: SortOrder
     createdAt?: SortOrder
@@ -13637,7 +15044,7 @@ export namespace Prisma {
     id?: SortOrder
     documentId?: SortOrder
     authorId?: SortOrder
-    body?: SortOrder
+    content?: SortOrder
     isResolved?: SortOrder
     createdAt?: SortOrder
   }
@@ -13646,7 +15053,7 @@ export namespace Prisma {
     id?: SortOrder
     documentId?: SortOrder
     authorId?: SortOrder
-    body?: SortOrder
+    content?: SortOrder
     isResolved?: SortOrder
     createdAt?: SortOrder
   }
@@ -13694,7 +15101,7 @@ export namespace Prisma {
     id?: SortOrder
     commentId?: SortOrder
     authorId?: SortOrder
-    body?: SortOrder
+    content?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -13702,7 +15109,7 @@ export namespace Prisma {
     id?: SortOrder
     commentId?: SortOrder
     authorId?: SortOrder
-    body?: SortOrder
+    content?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -13710,7 +15117,7 @@ export namespace Prisma {
     id?: SortOrder
     commentId?: SortOrder
     authorId?: SortOrder
-    body?: SortOrder
+    content?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -14141,6 +15548,13 @@ export namespace Prisma {
     connect?: DocumentCollaboratorWhereUniqueInput | DocumentCollaboratorWhereUniqueInput[]
   }
 
+  export type ShareLinkCreateNestedManyWithoutDocumentInput = {
+    create?: XOR<ShareLinkCreateWithoutDocumentInput, ShareLinkUncheckedCreateWithoutDocumentInput> | ShareLinkCreateWithoutDocumentInput[] | ShareLinkUncheckedCreateWithoutDocumentInput[]
+    connectOrCreate?: ShareLinkCreateOrConnectWithoutDocumentInput | ShareLinkCreateOrConnectWithoutDocumentInput[]
+    createMany?: ShareLinkCreateManyDocumentInputEnvelope
+    connect?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
+  }
+
   export type DocumentVersionCreateNestedManyWithoutDocumentInput = {
     create?: XOR<DocumentVersionCreateWithoutDocumentInput, DocumentVersionUncheckedCreateWithoutDocumentInput> | DocumentVersionCreateWithoutDocumentInput[] | DocumentVersionUncheckedCreateWithoutDocumentInput[]
     connectOrCreate?: DocumentVersionCreateOrConnectWithoutDocumentInput | DocumentVersionCreateOrConnectWithoutDocumentInput[]
@@ -14167,6 +15581,13 @@ export namespace Prisma {
     connectOrCreate?: DocumentCollaboratorCreateOrConnectWithoutDocumentInput | DocumentCollaboratorCreateOrConnectWithoutDocumentInput[]
     createMany?: DocumentCollaboratorCreateManyDocumentInputEnvelope
     connect?: DocumentCollaboratorWhereUniqueInput | DocumentCollaboratorWhereUniqueInput[]
+  }
+
+  export type ShareLinkUncheckedCreateNestedManyWithoutDocumentInput = {
+    create?: XOR<ShareLinkCreateWithoutDocumentInput, ShareLinkUncheckedCreateWithoutDocumentInput> | ShareLinkCreateWithoutDocumentInput[] | ShareLinkUncheckedCreateWithoutDocumentInput[]
+    connectOrCreate?: ShareLinkCreateOrConnectWithoutDocumentInput | ShareLinkCreateOrConnectWithoutDocumentInput[]
+    createMany?: ShareLinkCreateManyDocumentInputEnvelope
+    connect?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
   }
 
   export type DocumentVersionUncheckedCreateNestedManyWithoutDocumentInput = {
@@ -14214,6 +15635,20 @@ export namespace Prisma {
     update?: DocumentCollaboratorUpdateWithWhereUniqueWithoutDocumentInput | DocumentCollaboratorUpdateWithWhereUniqueWithoutDocumentInput[]
     updateMany?: DocumentCollaboratorUpdateManyWithWhereWithoutDocumentInput | DocumentCollaboratorUpdateManyWithWhereWithoutDocumentInput[]
     deleteMany?: DocumentCollaboratorScalarWhereInput | DocumentCollaboratorScalarWhereInput[]
+  }
+
+  export type ShareLinkUpdateManyWithoutDocumentNestedInput = {
+    create?: XOR<ShareLinkCreateWithoutDocumentInput, ShareLinkUncheckedCreateWithoutDocumentInput> | ShareLinkCreateWithoutDocumentInput[] | ShareLinkUncheckedCreateWithoutDocumentInput[]
+    connectOrCreate?: ShareLinkCreateOrConnectWithoutDocumentInput | ShareLinkCreateOrConnectWithoutDocumentInput[]
+    upsert?: ShareLinkUpsertWithWhereUniqueWithoutDocumentInput | ShareLinkUpsertWithWhereUniqueWithoutDocumentInput[]
+    createMany?: ShareLinkCreateManyDocumentInputEnvelope
+    set?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
+    disconnect?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
+    delete?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
+    connect?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
+    update?: ShareLinkUpdateWithWhereUniqueWithoutDocumentInput | ShareLinkUpdateWithWhereUniqueWithoutDocumentInput[]
+    updateMany?: ShareLinkUpdateManyWithWhereWithoutDocumentInput | ShareLinkUpdateManyWithWhereWithoutDocumentInput[]
+    deleteMany?: ShareLinkScalarWhereInput | ShareLinkScalarWhereInput[]
   }
 
   export type DocumentVersionUpdateManyWithoutDocumentNestedInput = {
@@ -14270,6 +15705,20 @@ export namespace Prisma {
     update?: DocumentCollaboratorUpdateWithWhereUniqueWithoutDocumentInput | DocumentCollaboratorUpdateWithWhereUniqueWithoutDocumentInput[]
     updateMany?: DocumentCollaboratorUpdateManyWithWhereWithoutDocumentInput | DocumentCollaboratorUpdateManyWithWhereWithoutDocumentInput[]
     deleteMany?: DocumentCollaboratorScalarWhereInput | DocumentCollaboratorScalarWhereInput[]
+  }
+
+  export type ShareLinkUncheckedUpdateManyWithoutDocumentNestedInput = {
+    create?: XOR<ShareLinkCreateWithoutDocumentInput, ShareLinkUncheckedCreateWithoutDocumentInput> | ShareLinkCreateWithoutDocumentInput[] | ShareLinkUncheckedCreateWithoutDocumentInput[]
+    connectOrCreate?: ShareLinkCreateOrConnectWithoutDocumentInput | ShareLinkCreateOrConnectWithoutDocumentInput[]
+    upsert?: ShareLinkUpsertWithWhereUniqueWithoutDocumentInput | ShareLinkUpsertWithWhereUniqueWithoutDocumentInput[]
+    createMany?: ShareLinkCreateManyDocumentInputEnvelope
+    set?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
+    disconnect?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
+    delete?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
+    connect?: ShareLinkWhereUniqueInput | ShareLinkWhereUniqueInput[]
+    update?: ShareLinkUpdateWithWhereUniqueWithoutDocumentInput | ShareLinkUpdateWithWhereUniqueWithoutDocumentInput[]
+    updateMany?: ShareLinkUpdateManyWithWhereWithoutDocumentInput | ShareLinkUpdateManyWithWhereWithoutDocumentInput[]
+    deleteMany?: ShareLinkScalarWhereInput | ShareLinkScalarWhereInput[]
   }
 
   export type DocumentVersionUncheckedUpdateManyWithoutDocumentNestedInput = {
@@ -14340,6 +15789,24 @@ export namespace Prisma {
     upsert?: UserUpsertWithoutCollaborationsInput
     connect?: UserWhereUniqueInput
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutCollaborationsInput, UserUpdateWithoutCollaborationsInput>, UserUncheckedUpdateWithoutCollaborationsInput>
+  }
+
+  export type DocumentCreateNestedOneWithoutShareLinksInput = {
+    create?: XOR<DocumentCreateWithoutShareLinksInput, DocumentUncheckedCreateWithoutShareLinksInput>
+    connectOrCreate?: DocumentCreateOrConnectWithoutShareLinksInput
+    connect?: DocumentWhereUniqueInput
+  }
+
+  export type NullableDateTimeFieldUpdateOperationsInput = {
+    set?: Date | string | null
+  }
+
+  export type DocumentUpdateOneRequiredWithoutShareLinksNestedInput = {
+    create?: XOR<DocumentCreateWithoutShareLinksInput, DocumentUncheckedCreateWithoutShareLinksInput>
+    connectOrCreate?: DocumentCreateOrConnectWithoutShareLinksInput
+    upsert?: DocumentUpsertWithoutShareLinksInput
+    connect?: DocumentWhereUniqueInput
+    update?: XOR<XOR<DocumentUpdateToOneWithWhereWithoutShareLinksInput, DocumentUpdateWithoutShareLinksInput>, DocumentUncheckedUpdateWithoutShareLinksInput>
   }
 
   export type DocumentCreateNestedOneWithoutVersionsInput = {
@@ -14696,6 +16163,31 @@ export namespace Prisma {
     not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
+  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
+  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
   export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -14798,6 +16290,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     collaborators?: DocumentCollaboratorCreateNestedManyWithoutDocumentInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutDocumentInput
     versions?: DocumentVersionCreateNestedManyWithoutDocumentInput
     comments?: CommentCreateNestedManyWithoutDocumentInput
     activities?: ActivityLogCreateNestedManyWithoutDocumentInput
@@ -14811,6 +16304,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     collaborators?: DocumentCollaboratorUncheckedCreateNestedManyWithoutDocumentInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutDocumentInput
     versions?: DocumentVersionUncheckedCreateNestedManyWithoutDocumentInput
     comments?: CommentUncheckedCreateNestedManyWithoutDocumentInput
     activities?: ActivityLogUncheckedCreateNestedManyWithoutDocumentInput
@@ -14852,7 +16346,7 @@ export namespace Prisma {
 
   export type CommentCreateWithoutAuthorInput = {
     id?: string
-    body: string
+    content: string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: boolean
     createdAt?: Date | string
@@ -14864,7 +16358,7 @@ export namespace Prisma {
   export type CommentUncheckedCreateWithoutAuthorInput = {
     id?: string
     documentId: string
-    body: string
+    content: string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: boolean
     createdAt?: Date | string
@@ -14884,7 +16378,7 @@ export namespace Prisma {
 
   export type CommentReplyCreateWithoutAuthorInput = {
     id?: string
-    body: string
+    content: string
     createdAt?: Date | string
     comment: CommentCreateNestedOneWithoutRepliesInput
   }
@@ -14892,7 +16386,7 @@ export namespace Prisma {
   export type CommentReplyUncheckedCreateWithoutAuthorInput = {
     id?: string
     commentId: string
-    body: string
+    content: string
     createdAt?: Date | string
   }
 
@@ -15057,7 +16551,7 @@ export namespace Prisma {
     id?: StringFilter<"Comment"> | string
     documentId?: StringFilter<"Comment"> | string
     authorId?: StringFilter<"Comment"> | string
-    body?: StringFilter<"Comment"> | string
+    content?: StringFilter<"Comment"> | string
     anchorData?: JsonNullableFilter<"Comment">
     isResolved?: BoolFilter<"Comment"> | boolean
     createdAt?: DateTimeFilter<"Comment"> | Date | string
@@ -15086,7 +16580,7 @@ export namespace Prisma {
     id?: StringFilter<"CommentReply"> | string
     commentId?: StringFilter<"CommentReply"> | string
     authorId?: StringFilter<"CommentReply"> | string
-    body?: StringFilter<"CommentReply"> | string
+    content?: StringFilter<"CommentReply"> | string
     createdAt?: DateTimeFilter<"CommentReply"> | Date | string
   }
 
@@ -15228,6 +16722,32 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type ShareLinkCreateWithoutDocumentInput = {
+    id?: string
+    token: string
+    role?: string
+    expiresAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
+  export type ShareLinkUncheckedCreateWithoutDocumentInput = {
+    id?: string
+    token: string
+    role?: string
+    expiresAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
+  export type ShareLinkCreateOrConnectWithoutDocumentInput = {
+    where: ShareLinkWhereUniqueInput
+    create: XOR<ShareLinkCreateWithoutDocumentInput, ShareLinkUncheckedCreateWithoutDocumentInput>
+  }
+
+  export type ShareLinkCreateManyDocumentInputEnvelope = {
+    data: ShareLinkCreateManyDocumentInput | ShareLinkCreateManyDocumentInput[]
+    skipDuplicates?: boolean
+  }
+
   export type DocumentVersionCreateWithoutDocumentInput = {
     id?: string
     content: string
@@ -15254,7 +16774,7 @@ export namespace Prisma {
 
   export type CommentCreateWithoutDocumentInput = {
     id?: string
-    body: string
+    content: string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: boolean
     createdAt?: Date | string
@@ -15266,7 +16786,7 @@ export namespace Prisma {
   export type CommentUncheckedCreateWithoutDocumentInput = {
     id?: string
     authorId: string
-    body: string
+    content: string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: boolean
     createdAt?: Date | string
@@ -15365,6 +16885,34 @@ export namespace Prisma {
     data: XOR<DocumentCollaboratorUpdateManyMutationInput, DocumentCollaboratorUncheckedUpdateManyWithoutDocumentInput>
   }
 
+  export type ShareLinkUpsertWithWhereUniqueWithoutDocumentInput = {
+    where: ShareLinkWhereUniqueInput
+    update: XOR<ShareLinkUpdateWithoutDocumentInput, ShareLinkUncheckedUpdateWithoutDocumentInput>
+    create: XOR<ShareLinkCreateWithoutDocumentInput, ShareLinkUncheckedCreateWithoutDocumentInput>
+  }
+
+  export type ShareLinkUpdateWithWhereUniqueWithoutDocumentInput = {
+    where: ShareLinkWhereUniqueInput
+    data: XOR<ShareLinkUpdateWithoutDocumentInput, ShareLinkUncheckedUpdateWithoutDocumentInput>
+  }
+
+  export type ShareLinkUpdateManyWithWhereWithoutDocumentInput = {
+    where: ShareLinkScalarWhereInput
+    data: XOR<ShareLinkUpdateManyMutationInput, ShareLinkUncheckedUpdateManyWithoutDocumentInput>
+  }
+
+  export type ShareLinkScalarWhereInput = {
+    AND?: ShareLinkScalarWhereInput | ShareLinkScalarWhereInput[]
+    OR?: ShareLinkScalarWhereInput[]
+    NOT?: ShareLinkScalarWhereInput | ShareLinkScalarWhereInput[]
+    id?: StringFilter<"ShareLink"> | string
+    documentId?: StringFilter<"ShareLink"> | string
+    token?: StringFilter<"ShareLink"> | string
+    role?: StringFilter<"ShareLink"> | string
+    expiresAt?: DateTimeNullableFilter<"ShareLink"> | Date | string | null
+    createdAt?: DateTimeFilter<"ShareLink"> | Date | string
+  }
+
   export type DocumentVersionUpsertWithWhereUniqueWithoutDocumentInput = {
     where: DocumentVersionWhereUniqueInput
     update: XOR<DocumentVersionUpdateWithoutDocumentInput, DocumentVersionUncheckedUpdateWithoutDocumentInput>
@@ -15432,6 +16980,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     owner: UserCreateNestedOneWithoutDocumentsInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutDocumentInput
     versions?: DocumentVersionCreateNestedManyWithoutDocumentInput
     comments?: CommentCreateNestedManyWithoutDocumentInput
     activities?: ActivityLogCreateNestedManyWithoutDocumentInput
@@ -15445,6 +16994,7 @@ export namespace Prisma {
     ownerId: string
     createdAt?: Date | string
     updatedAt?: Date | string
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutDocumentInput
     versions?: DocumentVersionUncheckedCreateNestedManyWithoutDocumentInput
     comments?: CommentUncheckedCreateNestedManyWithoutDocumentInput
     activities?: ActivityLogUncheckedCreateNestedManyWithoutDocumentInput
@@ -15507,6 +17057,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     owner?: UserUpdateOneRequiredWithoutDocumentsNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutDocumentNestedInput
     versions?: DocumentVersionUpdateManyWithoutDocumentNestedInput
     comments?: CommentUpdateManyWithoutDocumentNestedInput
     activities?: ActivityLogUpdateManyWithoutDocumentNestedInput
@@ -15520,6 +17071,7 @@ export namespace Prisma {
     ownerId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutDocumentNestedInput
     versions?: DocumentVersionUncheckedUpdateManyWithoutDocumentNestedInput
     comments?: CommentUncheckedUpdateManyWithoutDocumentNestedInput
     activities?: ActivityLogUncheckedUpdateManyWithoutDocumentNestedInput
@@ -15564,6 +17116,78 @@ export namespace Prisma {
     activities?: ActivityLogUncheckedUpdateManyWithoutUserNestedInput
   }
 
+  export type DocumentCreateWithoutShareLinksInput = {
+    id?: string
+    title: string
+    content?: string
+    yjsState?: Bytes | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    owner: UserCreateNestedOneWithoutDocumentsInput
+    collaborators?: DocumentCollaboratorCreateNestedManyWithoutDocumentInput
+    versions?: DocumentVersionCreateNestedManyWithoutDocumentInput
+    comments?: CommentCreateNestedManyWithoutDocumentInput
+    activities?: ActivityLogCreateNestedManyWithoutDocumentInput
+  }
+
+  export type DocumentUncheckedCreateWithoutShareLinksInput = {
+    id?: string
+    title: string
+    content?: string
+    yjsState?: Bytes | null
+    ownerId: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    collaborators?: DocumentCollaboratorUncheckedCreateNestedManyWithoutDocumentInput
+    versions?: DocumentVersionUncheckedCreateNestedManyWithoutDocumentInput
+    comments?: CommentUncheckedCreateNestedManyWithoutDocumentInput
+    activities?: ActivityLogUncheckedCreateNestedManyWithoutDocumentInput
+  }
+
+  export type DocumentCreateOrConnectWithoutShareLinksInput = {
+    where: DocumentWhereUniqueInput
+    create: XOR<DocumentCreateWithoutShareLinksInput, DocumentUncheckedCreateWithoutShareLinksInput>
+  }
+
+  export type DocumentUpsertWithoutShareLinksInput = {
+    update: XOR<DocumentUpdateWithoutShareLinksInput, DocumentUncheckedUpdateWithoutShareLinksInput>
+    create: XOR<DocumentCreateWithoutShareLinksInput, DocumentUncheckedCreateWithoutShareLinksInput>
+    where?: DocumentWhereInput
+  }
+
+  export type DocumentUpdateToOneWithWhereWithoutShareLinksInput = {
+    where?: DocumentWhereInput
+    data: XOR<DocumentUpdateWithoutShareLinksInput, DocumentUncheckedUpdateWithoutShareLinksInput>
+  }
+
+  export type DocumentUpdateWithoutShareLinksInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
+    yjsState?: NullableBytesFieldUpdateOperationsInput | Bytes | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    owner?: UserUpdateOneRequiredWithoutDocumentsNestedInput
+    collaborators?: DocumentCollaboratorUpdateManyWithoutDocumentNestedInput
+    versions?: DocumentVersionUpdateManyWithoutDocumentNestedInput
+    comments?: CommentUpdateManyWithoutDocumentNestedInput
+    activities?: ActivityLogUpdateManyWithoutDocumentNestedInput
+  }
+
+  export type DocumentUncheckedUpdateWithoutShareLinksInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    title?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
+    yjsState?: NullableBytesFieldUpdateOperationsInput | Bytes | null
+    ownerId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    collaborators?: DocumentCollaboratorUncheckedUpdateManyWithoutDocumentNestedInput
+    versions?: DocumentVersionUncheckedUpdateManyWithoutDocumentNestedInput
+    comments?: CommentUncheckedUpdateManyWithoutDocumentNestedInput
+    activities?: ActivityLogUncheckedUpdateManyWithoutDocumentNestedInput
+  }
+
   export type DocumentCreateWithoutVersionsInput = {
     id?: string
     title: string
@@ -15573,6 +17197,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     owner: UserCreateNestedOneWithoutDocumentsInput
     collaborators?: DocumentCollaboratorCreateNestedManyWithoutDocumentInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutDocumentInput
     comments?: CommentCreateNestedManyWithoutDocumentInput
     activities?: ActivityLogCreateNestedManyWithoutDocumentInput
   }
@@ -15586,6 +17211,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     collaborators?: DocumentCollaboratorUncheckedCreateNestedManyWithoutDocumentInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutDocumentInput
     comments?: CommentUncheckedCreateNestedManyWithoutDocumentInput
     activities?: ActivityLogUncheckedCreateNestedManyWithoutDocumentInput
   }
@@ -15615,6 +17241,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     owner?: UserUpdateOneRequiredWithoutDocumentsNestedInput
     collaborators?: DocumentCollaboratorUpdateManyWithoutDocumentNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutDocumentNestedInput
     comments?: CommentUpdateManyWithoutDocumentNestedInput
     activities?: ActivityLogUpdateManyWithoutDocumentNestedInput
   }
@@ -15628,6 +17255,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     collaborators?: DocumentCollaboratorUncheckedUpdateManyWithoutDocumentNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutDocumentNestedInput
     comments?: CommentUncheckedUpdateManyWithoutDocumentNestedInput
     activities?: ActivityLogUncheckedUpdateManyWithoutDocumentNestedInput
   }
@@ -15641,6 +17269,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     owner: UserCreateNestedOneWithoutDocumentsInput
     collaborators?: DocumentCollaboratorCreateNestedManyWithoutDocumentInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutDocumentInput
     versions?: DocumentVersionCreateNestedManyWithoutDocumentInput
     activities?: ActivityLogCreateNestedManyWithoutDocumentInput
   }
@@ -15654,6 +17283,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     collaborators?: DocumentCollaboratorUncheckedCreateNestedManyWithoutDocumentInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutDocumentInput
     versions?: DocumentVersionUncheckedCreateNestedManyWithoutDocumentInput
     activities?: ActivityLogUncheckedCreateNestedManyWithoutDocumentInput
   }
@@ -15698,7 +17328,7 @@ export namespace Prisma {
 
   export type CommentReplyCreateWithoutCommentInput = {
     id?: string
-    body: string
+    content: string
     createdAt?: Date | string
     author: UserCreateNestedOneWithoutRepliesInput
   }
@@ -15706,7 +17336,7 @@ export namespace Prisma {
   export type CommentReplyUncheckedCreateWithoutCommentInput = {
     id?: string
     authorId: string
-    body: string
+    content: string
     createdAt?: Date | string
   }
 
@@ -15760,6 +17390,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     owner?: UserUpdateOneRequiredWithoutDocumentsNestedInput
     collaborators?: DocumentCollaboratorUpdateManyWithoutDocumentNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutDocumentNestedInput
     versions?: DocumentVersionUpdateManyWithoutDocumentNestedInput
     activities?: ActivityLogUpdateManyWithoutDocumentNestedInput
   }
@@ -15773,6 +17404,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     collaborators?: DocumentCollaboratorUncheckedUpdateManyWithoutDocumentNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutDocumentNestedInput
     versions?: DocumentVersionUncheckedUpdateManyWithoutDocumentNestedInput
     activities?: ActivityLogUncheckedUpdateManyWithoutDocumentNestedInput
   }
@@ -15850,7 +17482,7 @@ export namespace Prisma {
 
   export type CommentCreateWithoutRepliesInput = {
     id?: string
-    body: string
+    content: string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: boolean
     createdAt?: Date | string
@@ -15863,7 +17495,7 @@ export namespace Prisma {
     id?: string
     documentId: string
     authorId: string
-    body: string
+    content: string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: boolean
     createdAt?: Date | string
@@ -15921,7 +17553,7 @@ export namespace Prisma {
 
   export type CommentUpdateWithoutRepliesInput = {
     id?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15934,7 +17566,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     documentId?: StringFieldUpdateOperationsInput | string
     authorId?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15982,7 +17614,7 @@ export namespace Prisma {
 
   export type CommentCreateWithoutMentionsInput = {
     id?: string
-    body: string
+    content: string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: boolean
     createdAt?: Date | string
@@ -15995,7 +17627,7 @@ export namespace Prisma {
     id?: string
     documentId: string
     authorId: string
-    body: string
+    content: string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: boolean
     createdAt?: Date | string
@@ -16053,7 +17685,7 @@ export namespace Prisma {
 
   export type CommentUpdateWithoutMentionsInput = {
     id?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -16066,7 +17698,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     documentId?: StringFieldUpdateOperationsInput | string
     authorId?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -16226,6 +17858,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     owner: UserCreateNestedOneWithoutDocumentsInput
     collaborators?: DocumentCollaboratorCreateNestedManyWithoutDocumentInput
+    shareLinks?: ShareLinkCreateNestedManyWithoutDocumentInput
     versions?: DocumentVersionCreateNestedManyWithoutDocumentInput
     comments?: CommentCreateNestedManyWithoutDocumentInput
   }
@@ -16239,6 +17872,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     collaborators?: DocumentCollaboratorUncheckedCreateNestedManyWithoutDocumentInput
+    shareLinks?: ShareLinkUncheckedCreateNestedManyWithoutDocumentInput
     versions?: DocumentVersionUncheckedCreateNestedManyWithoutDocumentInput
     comments?: CommentUncheckedCreateNestedManyWithoutDocumentInput
   }
@@ -16307,6 +17941,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     owner?: UserUpdateOneRequiredWithoutDocumentsNestedInput
     collaborators?: DocumentCollaboratorUpdateManyWithoutDocumentNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutDocumentNestedInput
     versions?: DocumentVersionUpdateManyWithoutDocumentNestedInput
     comments?: CommentUpdateManyWithoutDocumentNestedInput
   }
@@ -16320,6 +17955,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     collaborators?: DocumentCollaboratorUncheckedUpdateManyWithoutDocumentNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutDocumentNestedInput
     versions?: DocumentVersionUncheckedUpdateManyWithoutDocumentNestedInput
     comments?: CommentUncheckedUpdateManyWithoutDocumentNestedInput
   }
@@ -16343,7 +17979,7 @@ export namespace Prisma {
   export type CommentCreateManyAuthorInput = {
     id?: string
     documentId: string
-    body: string
+    content: string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: boolean
     createdAt?: Date | string
@@ -16352,7 +17988,7 @@ export namespace Prisma {
   export type CommentReplyCreateManyAuthorInput = {
     id?: string
     commentId: string
-    body: string
+    content: string
     createdAt?: Date | string
   }
 
@@ -16385,6 +18021,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     collaborators?: DocumentCollaboratorUpdateManyWithoutDocumentNestedInput
+    shareLinks?: ShareLinkUpdateManyWithoutDocumentNestedInput
     versions?: DocumentVersionUpdateManyWithoutDocumentNestedInput
     comments?: CommentUpdateManyWithoutDocumentNestedInput
     activities?: ActivityLogUpdateManyWithoutDocumentNestedInput
@@ -16398,6 +18035,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     collaborators?: DocumentCollaboratorUncheckedUpdateManyWithoutDocumentNestedInput
+    shareLinks?: ShareLinkUncheckedUpdateManyWithoutDocumentNestedInput
     versions?: DocumentVersionUncheckedUpdateManyWithoutDocumentNestedInput
     comments?: CommentUncheckedUpdateManyWithoutDocumentNestedInput
     activities?: ActivityLogUncheckedUpdateManyWithoutDocumentNestedInput
@@ -16435,7 +18073,7 @@ export namespace Prisma {
 
   export type CommentUpdateWithoutAuthorInput = {
     id?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -16447,7 +18085,7 @@ export namespace Prisma {
   export type CommentUncheckedUpdateWithoutAuthorInput = {
     id?: StringFieldUpdateOperationsInput | string
     documentId?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -16458,7 +18096,7 @@ export namespace Prisma {
   export type CommentUncheckedUpdateManyWithoutAuthorInput = {
     id?: StringFieldUpdateOperationsInput | string
     documentId?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -16466,7 +18104,7 @@ export namespace Prisma {
 
   export type CommentReplyUpdateWithoutAuthorInput = {
     id?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     comment?: CommentUpdateOneRequiredWithoutRepliesNestedInput
   }
@@ -16474,14 +18112,14 @@ export namespace Prisma {
   export type CommentReplyUncheckedUpdateWithoutAuthorInput = {
     id?: StringFieldUpdateOperationsInput | string
     commentId?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type CommentReplyUncheckedUpdateManyWithoutAuthorInput = {
     id?: StringFieldUpdateOperationsInput | string
     commentId?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -16555,6 +18193,14 @@ export namespace Prisma {
     createdAt?: Date | string
   }
 
+  export type ShareLinkCreateManyDocumentInput = {
+    id?: string
+    token: string
+    role?: string
+    expiresAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
   export type DocumentVersionCreateManyDocumentInput = {
     id?: string
     content: string
@@ -16565,7 +18211,7 @@ export namespace Prisma {
   export type CommentCreateManyDocumentInput = {
     id?: string
     authorId: string
-    body: string
+    content: string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: boolean
     createdAt?: Date | string
@@ -16600,6 +18246,30 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type ShareLinkUpdateWithoutDocumentInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ShareLinkUncheckedUpdateWithoutDocumentInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ShareLinkUncheckedUpdateManyWithoutDocumentInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type DocumentVersionUpdateWithoutDocumentInput = {
     id?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
@@ -16623,7 +18293,7 @@ export namespace Prisma {
 
   export type CommentUpdateWithoutDocumentInput = {
     id?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -16635,7 +18305,7 @@ export namespace Prisma {
   export type CommentUncheckedUpdateWithoutDocumentInput = {
     id?: StringFieldUpdateOperationsInput | string
     authorId?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -16646,7 +18316,7 @@ export namespace Prisma {
   export type CommentUncheckedUpdateManyWithoutDocumentInput = {
     id?: StringFieldUpdateOperationsInput | string
     authorId?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     anchorData?: NullableJsonNullValueInput | InputJsonValue
     isResolved?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -16679,7 +18349,7 @@ export namespace Prisma {
   export type CommentReplyCreateManyCommentInput = {
     id?: string
     authorId: string
-    body: string
+    content: string
     createdAt?: Date | string
   }
 
@@ -16690,7 +18360,7 @@ export namespace Prisma {
 
   export type CommentReplyUpdateWithoutCommentInput = {
     id?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     author?: UserUpdateOneRequiredWithoutRepliesNestedInput
   }
@@ -16698,14 +18368,14 @@ export namespace Prisma {
   export type CommentReplyUncheckedUpdateWithoutCommentInput = {
     id?: StringFieldUpdateOperationsInput | string
     authorId?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type CommentReplyUncheckedUpdateManyWithoutCommentInput = {
     id?: StringFieldUpdateOperationsInput | string
     authorId?: StringFieldUpdateOperationsInput | string
-    body?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

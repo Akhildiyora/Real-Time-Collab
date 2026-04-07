@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/auth.store";
+import { ThemeToggle } from "./ThemeToggle";
 
 export const Navbar: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -25,7 +26,9 @@ export const Navbar: React.FC = () => {
           </Link>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
+          
           {isAuthenticated ? (
             <>
               <div className="hidden md:flex items-center gap-4 text-sm font-medium text-text">

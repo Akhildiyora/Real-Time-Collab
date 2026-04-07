@@ -1,18 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { documentService } from '../services/document.service';
-import type { Document } from '../services/document.service';
+import type { EditorDocument as Document } from '../services/document.service';
 import { useAuthStore } from '../store/auth.store';
-import { Plus, FileText, Trash2, Clock, Users, ArrowRight } from 'lucide-react';
+import { Plus, FileText, Trash2, Clock, Users, ArrowRight, Search, X } from 'lucide-react';
+import { useState } from 'react';
+import { useDebounce } from '../hooks/useDebounce';
 
 export function HomePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 500);
 
   const { data: documents, isLoading } = useQuery({
-    queryKey: ['documents'],
-    queryFn: () => documentService.getDocuments(),
+    queryKey: ['documents', debouncedSearch],
+    queryFn: () => debouncedSearch 
+      ? documentService.searchDocuments(debouncedSearch) 
+      : documentService.getDocuments(),
   });
 
   const createMutation = useMutation({
@@ -39,19 +45,39 @@ export function HomePage() {
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
+        <div className="flex-1 max-w-2xl">
           <h1 className="text-4xl font-black tracking-tight text-text-h sm:text-5xl">
             My Documents
           </h1>
           <p className="mt-2 text-lg text-text">
             Manage and collaborate on your real-time documents.
           </p>
+          
+          <div className="mt-8 relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-text/40 group-focus-within:text-accent transition-colors" />
+            <input
+              type="text"
+              placeholder="Search documents by title or content..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-12 py-4 bg-bg border border-border rounded-2xl shadow-sm focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all placeholder:text-text/30 text-text-h font-medium"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-accent/10 rounded-full text-text/40 hover:text-accent transition-all"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
+        
         <button
           onClick={handleCreate}
           disabled={createMutation.isPending}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-6 py-3.5 text-base font-bold text-white shadow-xl shadow-accent/20 transition-all hover:bg-accent/90 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-8 py-4 text-base font-bold text-white shadow-xl shadow-accent/20 transition-all hover:bg-accent/90 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 h-fit"
         >
           <Plus className="h-5 w-5" />
           New Document

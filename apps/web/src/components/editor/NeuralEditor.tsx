@@ -1,285 +1,477 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { EditorContent, Editor, ReactRenderer } from '@tiptap/react';
-import { StarterKit } from '@tiptap/starter-kit';
-import { Collaboration } from '@tiptap/extension-collaboration';
-import { Mention } from '@tiptap/extension-mention';
-import { WebsocketProvider } from 'y-websocket';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useEditor, EditorContent, ReactRenderer, BubbleMenu } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Collaboration from '@tiptap/extension-collaboration';
+import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
+import Placeholder from '@tiptap/extension-placeholder';
+import Mention from '@tiptap/extension-mention';
 import * as Y from 'yjs';
-import { CommentExtension } from './CommentExtension';
+import { WebsocketProvider } from 'y-websocket';
+import { IndexeddbPersistence } from 'y-indexeddb';
+import debounce from 'lodash/debounce';
+import tippy from 'tippy.js';
+import { CommentSidebar } from './CommentSidebar';
+import { NeuralSelectionCallback } from './NeuralSelectionCallback';
 import { MentionList } from './MentionList';
-import { commentService } from '../../services/comment.service';
-import { 
-  Bold, 
-  Italic, 
-  Heading1, 
-  Heading2, 
-  MessageCircle, 
-  Loader2, 
-  AlertCircle,
-  Users,
-  Terminal,
-  Activity,
-  ArrowRight
-} from 'lucide-react';
+import { Bell, Shield, Eye, Edit3, CloudOff, Loader2, Zap, MessageSquarePlus, Send } from 'lucide-react';
+import { documentService } from '../../services/document.service';
 
 interface NeuralEditorProps {
   documentId: string;
-  currentUser: { email: string };
-  onAddComment: () => void;
-  onSyncEvent?: () => void;
+  currentUser: any;
+  comments: any[];
+  onAddComment: (content: string, anchorData: any) => Promise<any>;
+  onReply: (commentId: string, content: string) => Promise<any>;
+  onResolve: (commentId: string) => Promise<any>;
+  onUpdateComment: (commentId: string, content: string) => Promise<any>;
+  onDeleteComment: (commentId: string) => Promise<any>;
+  onUpdateReply: (replyId: string, content: string) => Promise<any>;
+  onDeleteReply: (replyId: string) => Promise<any>;
+  onSyncEvent?: (event: { type: string, payload?: any, kind?: string }) => void;
+  userRole?: string;
+  shareToken?: string | null;
 }
 
-function getUserColor(email: string) {
+function getNeuralAvatarColor(email: string) {
   const colors = ['#f87171', '#fbbf24', '#4ade80', '#22d3ee', '#818cf8', '#f472b6', '#c084fc', '#fb923c'];
   let hash = 0;
   for (let i = 0; i < email.length; i++) hash = email.charCodeAt(i) + ((hash << 5) - hash);
   return colors[Math.abs(hash) % colors.length];
 }
 
-export function NeuralEditor({ documentId, currentUser, onAddComment, onSyncEvent }: NeuralEditorProps) {
-  const [editor, setEditor] = useState<Editor | null>(null);
-  const [status, setStatus] = useState<'IDLE' | 'SYNC' | 'READY' | 'CRASHED'>('IDLE');
-  const [wsError, setWsError] = useState<string | null>(null);
-  const [activeUsers, setActiveUsers] = useState<any[]>([]);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  
-  const engineRef = useRef<{ 
-    ydoc: Y.Doc | null; 
-    provider: WebsocketProvider | null; 
-    editor: Editor | null 
-  } | null>(null);
+import React from 'react';
 
-  const handleCreateComment = useCallback(async () => {
-    if (!editor) return;
+export const NeuralEditor = React.memo(({
+  documentId,
+  currentUser,
+  comments,
+  onAddComment,
+  onReply,
+  onResolve,
+  onUpdateComment,
+  onDeleteComment,
+  onUpdateReply,
+  onDeleteReply,
+  onSyncEvent,
+  userRole = 'viewer',
+  shareToken = null
+}: NeuralEditorProps) => {
+  const [provider, setProvider] = useState<WebsocketProvider | null>(null);
+  const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
+  const [notification, setNotification] = useState<string | null>(null);
+  const [commentInput, setCommentInput] = useState('');
+  const [isAddingComment, setIsAddingComment] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Phase 9: Save Status & Persistence
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'offline' | 'error'>('saved');
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  const isViewer = userRole === 'viewer';
+  const yDoc = useMemo(() => new Y.Doc(), []);
+
+  // Sync Network Status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Helper: Convert Uint8Array to Base64 safely
+  const toBase64 = useCallback((Uint8Arr: Uint8Array) => {
+    let binary = '';
+    const len = Uint8Arr.byteLength;
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(Uint8Arr[i]);
+    }
+    return window.btoa(binary);
+  }, []);
+
+  // Phase 9: Debounced Cloud Sync
+  const debouncedSync = useMemo(
+    () => debounce(async (doc: Y.Doc) => {
+      if (!navigator.onLine || isViewer) return;
+
+      try {
+        setSaveStatus('saving');
+        const state = Y.encodeStateAsUpdate(doc);
+        const base64State = toBase64(state);
+        
+        await documentService.updateDocument(documentId, {
+          yjsState: base64State
+        });
+        
+        setSaveStatus('saved');
+      } catch (err) {
+        console.error('Autosave failed:', err);
+        setSaveStatus('error');
+      }
+    }, 2000),
+    [documentId, isViewer, toBase64]
+  );
+
+  // Determine the name to show in the presence system
+  const presenceName = currentUser?.email 
+    ? currentUser.email.split('@')[0] 
+    : (shareToken ? `Guest_${Math.floor(Math.random() * 1000)}` : 'NeuralNode');
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        history: false, // Incompatible with Collaboration
+      }),
+      Placeholder.configure({
+        placeholder: isViewer ? 'Viewing read-only vector...' : 'Enter the Neural Void... Write something remarkable.',
+      }),
+      Collaboration.configure({
+        document: yDoc,
+      }),
+      provider ? CollaborationCursor.configure({
+        provider: provider as any,
+        user: {
+          name: presenceName,
+          color: getNeuralAvatarColor(currentUser?.email || presenceName),
+        },
+      }) : undefined,
+      NeuralSelectionCallback,
+      Mention.configure({
+        HTMLAttributes: {
+          class: 'mention px-1.5 py-0.5 rounded-md bg-accent/10 text-accent font-black border border-accent/20',
+        },
+        suggestion: {
+          render: () => {
+            let component: any;
+            let popup: any;
+
+            return {
+              onStart: (props) => {
+                component = new ReactRenderer(MentionList, {
+                  props,
+                  editor: props.editor,
+                });
+
+                popup = tippy('body', {
+                  getReferenceClientRect: props.clientRect as any,
+                  appendTo: () => document.body,
+                  content: component.element,
+                  showOnCreate: true,
+                  interactive: true,
+                  trigger: 'manual',
+                  placement: 'bottom-start',
+                });
+              },
+              onUpdate: (props) => {
+                component.updateProps(props);
+                popup[0].setProps({
+                  getReferenceClientRect: props.clientRect as any,
+                });
+              },
+              onKeyDown: (props) => {
+                if (props.event.key === 'Escape') {
+                  popup[0].hide();
+                  return true;
+                }
+                return component.ref?.onKeyDown(props);
+              },
+              onExit: () => {
+                popup[0].destroy();
+                component.destroy();
+              },
+            };
+          },
+        }
+      })
+    ].filter((e): e is any => !!e),
+    editable: !isViewer,
+    content: '',
+    shouldRerenderOnTransaction: false,
+  }, [provider, isViewer, yDoc]);
+
+  // Phase 7: Add Comment Logic (Moved here to fix declaration order)
+  const handleAddComment = useCallback(async () => {
+    if (!editor || !commentInput.trim() || isViewer) return;
+
     const { from, to } = editor.state.selection;
     if (from === to) return;
 
-    const body = window.prompt("Capture Neural Signal:");
-    if (!body?.trim()) return;
-
-    setIsRefreshing(true);
     try {
-      const type = engineRef.current?.ydoc?.getXmlFragment('default');
-      if (!type) throw new Error("Sync Handshake Failed");
+      const type = yDoc.getXmlFragment('default');
+      const anchorData = {
+        from: Y.createRelativePositionFromTypeIndex(type, from - 1), // Tiptap is 1-indexed, Yjs is 0-indexed
+        to: Y.createRelativePositionFromTypeIndex(type, to - 1),
+      };
+
+      await onAddComment(commentInput, anchorData);
       
-      const anchor = Y.createRelativePositionFromTypeIndex(type, from);
-      const head = Y.createRelativePositionFromTypeIndex(type, to);
-
-      const comment = await commentService.createComment(documentId, body, {
-        anchor: Y.encodeRelativePosition(anchor),
-        head: Y.encodeRelativePosition(head)
-      });
-
-      editor.chain().setMark('comment', { commentId: comment.id }).run();
-      if (onSyncEvent) onSyncEvent();
-      onAddComment();
-    } catch (e: any) {
-      console.error("[CATASTROPHIC] Anchor Failure:", e);
-    } finally { setIsRefreshing(false); }
-  }, [editor, documentId, onAddComment, onSyncEvent]);
+      setCommentInput('');
+      setIsAddingComment(false);
+      editor.commands.focus();
+    } catch (err) {
+      console.error('Failed to add comment:', err);
+    }
+  }, [editor, commentInput, onAddComment, isViewer, yDoc]);
 
   useEffect(() => {
-    let isMounted = true;
+    if (!documentId) return;
+
+    // 1. Local Persistence (IndexedDB)
+    const persistence = new IndexeddbPersistence(documentId, yDoc);
+    
+    // 2. Real-time Sync (WebSocket)
     const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3000';
-    const token = localStorage.getItem('accessToken');
+    // FIX: Using CORRECT storage key "accessToken"
+    const jwtToken = (localStorage.getItem('accessToken') || '').replace(/^Bearer\s+/i, "");
+    
+    // Pass JWT to server for authentication over WebSocket
+    const newProvider = new WebsocketProvider(
+      wsUrl,
+      documentId,
+      yDoc,
+      { 
+        params: { 
+          token: jwtToken || shareToken || '',
+        },
+      }
+    );
 
-    if (!token) {
-       setWsError("Unauthorized Pipeline");
-       setStatus('CRASHED');
-       return;
-    }
-
-    if (engineRef.current) return;
-
-    console.log('[Neural Sync] Initializing v25 (Filtered Kit)...');
-    setStatus('SYNC');
-
-    const ydoc = new Y.Doc();
-    const provider = new WebsocketProvider(wsUrl, documentId, ydoc, { params: { token } });
-    engineRef.current = { ydoc, provider, editor: null };
-
-    const handleWsMessage = (event: MessageEvent) => {
-       try {
-         const data = JSON.parse(event.data);
-         if (data.type === 'SYNC_EVENT' && onSyncEvent) onSyncEvent();
-       } catch { /* Silent */ }
-    };
-    provider.ws?.addEventListener('message', handleWsMessage);
-
-    provider.on('status', (event: any) => {
-      if (!isMounted) return;
-      if (event.status === 'connected') {
-        setWsError(null);
-        provider.awareness.setLocalStateField('user', {
-          name: currentUser.email.split('@')[0] || 'Anonymous',
-          color: getUserColor(currentUser.email),
-        });
-
-        if (!engineRef.current?.editor && isMounted) {
-           try {
-             const editorInstance = new Editor({
-               extensions: [
-                 // --- v25 Filtered StarterKit ---
-                 // We specifically disable history, gapcursor, and dropcursor in StarterKit 
-                 // to prevent collisions with Collaboration and our custom schema logic.
-                 StarterKit.configure({
-                   history: false,
-                   gapcursor: false,
-                   dropcursor: false,
-                 }),
-                 Collaboration.configure({ document: ydoc }),
-                 CommentExtension,
-                 Mention.configure({
-                   HTMLAttributes: { class: 'bg-accent/20 text-accent px-1.5 py-0.5 rounded-md font-black shadow-glow' },
-                   suggestion: {
-                     items: ({ query }: { query: string }) => {
-                       const states = Array.from(provider.awareness.getStates().values());
-                       const collaborators = states
-                         .filter((s: any) => s.user)
-                         .map((s: any) => ({ id: s.user.name, label: s.user.name }));
-                       return collaborators.filter(i => i.label.toLowerCase().includes(query.toLowerCase()));
-                     },
-                     render: () => {
-                       let component: ReactRenderer | null = null;
-                       return {
-                         onStart: (props: any) => {
-                           component = new ReactRenderer(MentionList, { props, editor: props.editor });
-                         },
-                         onUpdate(props: any) { component?.updateProps(props) },
-                         onKeyDown(props: any) {
-                           if (props.event.key === 'Escape') { component?.destroy(); return true }
-                           return (component?.ref as any)?.onKeyDown?.(props)
-                         },
-                         onExit() { component?.destroy() },
-                       }
-                     },
-                   }
-                 }),
-               ],
-               editorProps: {
-                 attributes: { class: 'prose prose-invert max-w-none focus:outline-none min-h-[800px] outline-none border-0 caret-accent selection:bg-accent/30' },
-               },
-               immediatelyRender: false,
-               onCreate: () => {
-                 if (isMounted) {
-                   engineRef.current!.editor = editorInstance;
-                   setEditor(editorInstance);
-                   setStatus('READY');
-                   console.log('[Neural Sync] v25 Operational');
-                 }
-               }
-             });
-           } catch (e: any) {
-             console.error("[CATASTROPHIC] v25 Engine Crash:", e);
-             setWsError(`Surface Collision: ${e.message}`);
-             setStatus('CRASHED');
-           }
-        }
+    newProvider.on('status', ({ status }: { status: string }) => {
+      if (status === 'connected') {
+        setSaveStatus('saved');
+      }
+      if (status === 'disconnected') {
+        setSaveStatus('offline');
       }
     });
 
-    const handleAwareness = () => {
-      if (!isMounted || !provider) return;
-      const states = Array.from(provider.awareness.getStates().values());
-      const users = states.filter((s: any) => s.user).map((s: any) => s.user);
-      setActiveUsers(Array.from(new Map(users.map(u => [u.name, u])).values()));
-    };
-    provider.awareness.on('change', handleAwareness);
+    // Custom events
+    newProvider.on('message', (data: any) => {
+      try {
+        const parsed = JSON.parse(data);
+        if (parsed.type === 'SYNC_EVENT' || parsed.kind === 'comments' || parsed.type === 'NOTIFICATION') {
+          if (onSyncEvent) onSyncEvent(parsed);
+        }
+        if (parsed.type === 'NOTIFICATION') {
+          setNotification(parsed.payload.message);
+          setTimeout(() => setNotification(null), 5000);
+        }
+      } catch {
+        // Ignored
+      }
+    });
 
+    // 3. Watch for changes to trigger autosave
+    yDoc.on('update', (_update: Uint8Array, origin: any) => {
+      if (origin !== newProvider && !isViewer) {
+         debouncedSync(yDoc);
+      }
+    });
+
+    setProvider(newProvider);
+
+    // Cleanup on unmount (with safety delay for StrictMode)
     return () => {
-      isMounted = false;
-      provider.ws?.removeEventListener('message', handleWsMessage);
-      if (engineRef.current?.editor) engineRef.current.editor.destroy();
-      if (engineRef.current?.provider) engineRef.current.provider.destroy();
-      if (engineRef.current?.ydoc) engineRef.current.ydoc.destroy();
-      engineRef.current = null;
+      setTimeout(() => {
+        if (newProvider) {
+          newProvider.disconnect();
+          newProvider.destroy();
+        }
+      }, 500);
+      setProvider(null);
+      persistence.destroy();
+      debouncedSync.cancel();
+      yDoc.off('update', () => {});
     };
-  }, [documentId, currentUser.email, onAddComment, onSyncEvent]);
+  }, [documentId, shareToken, onSyncEvent, yDoc, debouncedSync, isViewer]);
+
+  if (!editor) return null;
 
   return (
-    <div className="flex-1 flex flex-col min-h-[85vh] relative bg-bg selection:bg-accent/40 selection:text-bg">
-      {/* Handshake Display */}
-      {status !== 'READY' && status !== 'CRASHED' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-14 z-50 bg-bg transition-opacity duration-1500 text-center">
-           <div className="relative scale-[4]">
-              <div className="absolute inset-[-20px] border border-accent/10 rounded-full animate-[spin_15s_linear_infinite]" />
-              <div className="absolute inset-[-10px] border border-white/5 rounded-full animate-[spin_8s_linear_reverse_infinite]" />
-              <Loader2 className="h-10 w-10 animate-spin text-accent opacity-5" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                 <div className="h-2 w-2 rounded-full bg-accent animate-ping shadow-[0_0_20px_var(--color-accent)]" />
-              </div>
+    <div className="flex h-full w-full relative group bg-bg">
+      {/* 🟢 Refined Header Overlay - Relocated to Bottom Right to prevent toolbar overlap */}
+      <div className="fixed bottom-8 right-8 z-[60] flex flex-col items-end gap-3 pointer-events-none sm:flex-row sm:items-center animate-in fade-in slide-in-from-bottom-4 duration-1000">
+         
+         {/* Sync Status Badge */}
+         <div className="h-11 px-4 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-3xl flex items-center gap-3 transition-all duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.4)] pointer-events-auto group/status">
+           <div className="relative">
+             {!isOnline ? (
+               <CloudOff className="h-4 w-4 text-red-400" />
+             ) : saveStatus === 'saving' ? (
+               <Loader2 className="h-4 w-4 animate-spin text-accent" />
+             ) : (
+               <Zap className={`h-4 w-4 ${saveStatus === 'saved' ? 'text-green-400' : 'text-white/40'}`} />
+             )}
+             {isOnline && saveStatus === 'saved' && (
+               <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-green-400 animate-ping" />
+             )}
            </div>
-           <div className="text-center space-y-4">
-              <p className="text-[14px] font-black uppercase tracking-[1.5em] text-accent/80 animate-pulse">Sync Pipeline v25</p>
-              <p className="text-[10px] text-white/20 font-black tracking-[0.5em] uppercase">Binding Filtered Neural Core...</p>
+           
+           <div className="flex flex-col">
+             <span className={`text-[10px] font-black uppercase tracking-widest leading-none ${
+               !isOnline ? 'text-red-400' : saveStatus === 'saving' ? 'text-accent' : 'text-white/60'
+             }`}>
+               {!isOnline ? 'Offline' : 
+                saveStatus === 'saving' ? 'Syncing...' : 
+                saveStatus === 'error' ? 'Sync Void' : 
+                'Connected'}
+             </span>
+             <span className="text-[7px] font-bold uppercase tracking-tighter opacity-40">
+               {saveStatus === 'saved' ? 'Vector Secure' : 'Neural Patching'}
+             </span>
            </div>
-        </div>
-      )}
+         </div>
 
-      {status === 'CRASHED' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-12 z-50 bg-bg text-center p-20 backdrop-blur-3xl m-2 rounded-[120px] border border-red-500/10 transition-all duration-1000 animate-in zoom-in-75">
-           <AlertCircle className="h-32 w-32 text-red-500/10" />
-           <div className="space-y-4">
-             <h3 className="text-red-500 font-black text-6xl uppercase tracking-tighter leading-none">Sync Collision</h3>
-             <p className="text-[11px] text-text-muted uppercase tracking-[0.8em] font-bold opacity-60 leading-relaxed max-w-sm mx-auto mt-8">{wsError}</p>
-           </div>
-           <button onClick={() => window.location.reload()} className="px-24 py-8 mt-12 bg-red-500 text-white rounded-[60px] font-black shadow-4xl hover:scale-110 active:scale-95 transition-all outline-none flex items-center gap-4 group">
-             RE-BOOT VECTOR ENGINE
-             <ArrowRight className="h-6 w-6 group-hover:translate-x-4 transition-transform" />
-           </button>
-        </div>
-      )}
-
-      {/* Surface Interface */}
-      <div className={`flex-1 flex flex-col transition-all duration-2000 ${editor ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-80 blur-3xl scale-95'}`}>
-         {/* Status Header */}
-         <div className="flex items-center justify-between border-b border-white/5 bg-white/05 px-14 py-11 backdrop-blur-3xl shadow-[0_30px_160px_rgba(0,0,0,0.8)] sticky top-0 z-50">
-            <div className="flex items-center gap-7 bg-accent/20 px-12 py-5 rounded-full border border-accent/20 group cursor-default shadow-[0_0_50px_rgba(var(--color-accent),0.15)] transition-all">
-               <Activity className="h-5 w-5 text-accent animate-pulse" />
-               <span className="text-[14px] font-black uppercase tracking-[0.8em] text-accent group-hover:tracking-[1em] transition-all">Phase 6 Operational</span>
-            </div>
+         {/* Access & Presence Badge */}
+         <div className="h-11 px-4 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-3xl flex items-center gap-3 shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all hover:bg-white/[0.06] pointer-events-auto">
+            {userRole === 'admin' ? (
+              <Shield className="h-4 w-4 text-accent" />
+            ) : userRole === 'editor' ? (
+              <Edit3 className="h-4 w-4 text-blue-400" />
+            ) : (
+              <Eye className="h-4 w-4 text-white/40" />
+            )}
             
-            <div className="flex items-center gap-16">
-              <div className="flex -space-x-8">
-                {activeUsers.map((u, i) => (
-                  <div key={i} className="h-16 w-16 rounded-full border-4 border-bg flex items-center justify-center text-[12px] font-black text-white hover:scale-150 hover:z-50 transition-all shadow-4xl ring-1 ring-white/10" style={{ backgroundColor: u.color }} title={u.name}>{u.name[0]}</div>
-                ))}
-                {activeUsers.length === 0 && (
-                   <div className="h-16 w-16 rounded-full border-4 border-bg bg-white/5 flex items-center justify-center text-white/5 shadow-2xl transition-opacity"><Users className="h-7 w-7" /></div>
-                )}
+            <div className="h-4 w-[1px] bg-white/10" />
+
+            <div className="flex items-center gap-2">
+              <div 
+                className="h-6 w-6 rounded-lg flex items-center justify-center text-[10px] font-black text-white/80 ring-1 ring-white/10 shadow-inner"
+                style={{ backgroundColor: `${getNeuralAvatarColor(presenceName)}33` }}
+              >
+                {presenceName[0].toUpperCase()}
               </div>
-              <div className="h-16 w-[1px] bg-white/10" />
-              <div className="flex gap-2.5 p-2 bg-gradient-to-br from-white/10 to-transparent rounded-[48px] border border-white/10 shadow-3xl ring-1 ring-white/5 transition-all">
-                 <button onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} className={`p-5 rounded-2xl transition-all duration-500 ${editor?.isActive('heading', { level: 1 }) ? 'bg-accent text-bg shadow-[0_0_60px_var(--color-accent)] scale-110' : 'hover:bg-white/5 text-text-muted hover:text-white'}`}><Heading1 className="h-7 w-7" /></button>
-                 <button onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} className={`p-5 rounded-2xl transition-all duration-500 ${editor?.isActive('heading', { level: 2 }) ? 'bg-accent text-bg shadow-[0_0_60px_var(--color-accent)] scale-110' : 'hover:bg-white/5 text-text-muted hover:text-white'}`}><Heading2 className="h-7 w-7" /></button>
-                 <div className="w-[1px] h-12 bg-white/10 my-auto mx-3" />
-                 <button onClick={() => editor?.chain().focus().toggleBold().run()} className={`p-5 rounded-2xl transition-all duration-500 ${editor?.isActive('bold') ? 'bg-accent text-bg shadow-[0_0_60px_var(--color-accent)] scale-110' : 'hover:bg-white/5 text-text-muted hover:text-white'}`}><Bold className="h-7 w-7" /></button>
-                 <button onClick={() => editor?.chain().focus().toggleItalic().run()} className={`p-5 rounded-2xl transition-all duration-500 ${editor?.isActive('italic') ? 'bg-accent text-bg shadow-[0_0_60px_var(--color-accent)] scale-110' : 'hover:bg-white/5 text-text-muted hover:text-white'}`}><Italic className="h-7 w-7" /></button>
-                 <div className="w-[1px] h-12 bg-white/10 my-auto mx-3" />
-                 <button 
-                  onClick={handleCreateComment} 
-                  disabled={isRefreshing}
-                  className={`p-5 rounded-2xl transition-all hover:bg-accent/20 hover:text-accent text-text-muted group relative shadow-2xl ${isRefreshing ? 'opacity-40 pointer-events-none' : ''}`}
-                 >
-                   {isRefreshing ? <Loader2 className="h-8 w-8 animate-spin" /> : <MessageCircle className="h-8 w-8 group-hover:scale-125 transition-all outline-none" />}
-                   <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-bg border border-white/10 px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.4em] text-accent opacity-0 group-hover:opacity-100 transition-all shadow-4xl pointer-events-none translate-y-4 group-hover:translate-y-0">Anchor signal</div>
-                 </button>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black uppercase tracking-widest text-text-h leading-none">
+                  {presenceName}
+                </span>
+                <span className={`text-[7px] font-black uppercase tracking-tighter ${
+                  userRole === 'admin' ? 'text-accent' :
+                  userRole === 'editor' ? 'text-blue-400 text-opacity-80' :
+                  'text-white/20'
+                }`}>
+                  {userRole} Mode
+                </span>
               </div>
             </div>
          </div>
 
-         <div className="flex-1 p-24 md:p-72 lg:p-96 overflow-y-auto selection:bg-accent/40 scrollbar-hide scroll-smooth">
-            <EditorContent editor={editor} className="bg-transparent" />
-            <div className="mt-80 pt-40 border-t border-white/5 opacity-5 flex flex-col items-center justify-center gap-14 select-none group-hover:opacity-15 transition-opacity duration-3000 grayscale hover:grayscale-0">
-               <div className="flex items-center gap-14">
-                  <Terminal className="h-8 w-8" />
-                  <span className="text-[15px] font-black uppercase tracking-[2.5em] ml-[2.5em]">VECTOR_ENGINE_v25</span>
-                  <div className="h-3 w-3 rounded-full bg-accent animate-ping shadow-[0_0_25px_var(--color-accent)]" />
-               </div>
-               <p className="text-[11px] tracking-[0.6em] font-mono leading-loose max-w-4xl text-center opacity-30 px-12">STABLE_TRACE_LOG::ESTABLISHED::FILTERED_KIT_V25</p>
-            </div>
-         </div>
+          {/* 🟢 NEW: Export Menu */}
+          <div className="flex items-center gap-2 pointer-events-auto">
+             <button
+                onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/documents/${documentId}/export/pdf`, '_blank')}
+                className="h-11 px-6 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-text-h hover:bg-accent hover:text-bg transition-all"
+             >
+                PDF
+             </button>
+             <button
+                onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/documents/${documentId}/export/docx`, '_blank')}
+                className="h-11 px-6 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-text-h hover:bg-accent hover:text-bg transition-all"
+             >
+                DOCX
+             </button>
+          </div>
+
+          {/* 🟢 NEW: Comment Toggle */}
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className={`h-11 px-6 rounded-2xl transition-all flex items-center gap-3 pointer-events-auto border ${
+              isSidebarOpen 
+                ? 'bg-accent text-bg border-accent shadow-[0_0_40px_rgba(var(--accent-rgb),0.3)]' 
+                : 'bg-black/40 text-white/60 border-white/10 hover:bg-white/5 backdrop-blur-3xl'
+            }`}
+          >
+            <MessageSquarePlus className={`h-4 w-4 ${isSidebarOpen ? '' : 'text-accent'}`} />
+            <span className="text-[10px] font-black uppercase tracking-widest">
+              Neural Feed {isSidebarOpen ? '(Hide)' : `(${comments.length})`}
+            </span>
+          </button>
       </div>
+
+      {notification && (
+        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-[70] animate-in slide-in-from-top-4 duration-500">
+           <div className="bg-accent text-bg px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-[0_0_50px_rgba(var(--accent-rgb),0.4)] flex items-center gap-3 border border-white/10 ring-1 ring-white/20">
+              <Bell className="h-4 w-4 animate-bounce" />
+              {notification}
+           </div>
+        </div>
+      )}
+
+      {/* Main Editor Surface */}
+      <div className="flex-1 overflow-y-auto px-4 md:px-24 lg:px-32 py-10 md:py-24 relative editor-surface custom-scrollbar selection:bg-accent/30 selection:text-white">
+        <div className="max-w-4xl mx-auto min-h-[70vh] bg-white/[0.02] rounded-[3rem] p-8 md:p-16 border border-white/5 shadow-2xl relative">
+          {/* Animated Background Glow */}
+          <div className="absolute top-0 left-1/4 w-1/2 h-full bg-accent/5 blur-[120px] pointer-events-none" />
+          
+          {/* 🟢 Premium Bubble Menu for Comments */}
+          {editor && !isViewer && (
+            <BubbleMenu 
+              editor={editor} 
+              tippyOptions={{ duration: 100, placement: 'top' }}
+              className="flex items-center bg-bg/90 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-2xl p-1.5 gap-1.5 overflow-hidden ring-1 ring-white/5"
+            >
+              {!isAddingComment ? (
+                <button
+                  onClick={() => setIsAddingComment(true)}
+                  className="flex items-center gap-2 px-4 py-2 hover:bg-white/5 rounded-xl transition-all group"
+                >
+                  <MessageSquarePlus className="h-4 w-4 text-accent group-hover:scale-110 transition-transform" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-text-h">Add Feedback</span>
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 p-1 animate-in zoom-in-95 duration-200">
+                  <input
+                    autoFocus
+                    placeholder="Vector insight..."
+                    className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-[11px] text-text outline-none focus:border-accent/40 w-[200px] transition-all"
+                    value={commentInput}
+                    onChange={(e) => setCommentInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleAddComment();
+                      if (e.key === 'Escape') setIsAddingComment(false);
+                    }}
+                  />
+                  <button
+                    disabled={!commentInput.trim()}
+                    onClick={handleAddComment}
+                    className="p-2 bg-accent text-bg rounded-xl hover:brightness-110 transition-all disabled:opacity-40"
+                  >
+                    <Send className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+            </BubbleMenu>
+          )}
+
+          <EditorContent 
+            editor={editor} 
+            className="prose prose-invert max-w-none min-h-[500px] 
+              prose-p:text-text-muted prose-p:leading-relaxed prose-p:text-[18px] prose-p:mb-6
+              prose-headings:text-text-h prose-headings:font-black prose-headings:tracking-tight
+              prose-h1:text-[2.5rem] md:text-[3.5rem] prose-h1:mb-12 prose-h1:leading-none
+              prose-blockquote:border-l-accent prose-blockquote:bg-accent/5 prose-blockquote:py-4 prose-blockquote:px-8 prose-blockquote:rounded-r-3xl
+              prose-strong:text-accent prose-strong:font-black" 
+          />
+        </div>
+      </div>
+
+      {isSidebarOpen && (
+        <CommentSidebar
+          comments={comments}
+          selectedCommentId={selectedCommentId}
+          onSelectComment={setSelectedCommentId}
+          onReply={onReply}
+          onResolve={onResolve}
+          onUpdateComment={onUpdateComment}
+          onDeleteComment={onDeleteComment}
+          onUpdateReply={onUpdateReply}
+          onDeleteReply={onDeleteReply}
+          currentUser={currentUser}
+        />
+      )}
     </div>
   );
-}
+});

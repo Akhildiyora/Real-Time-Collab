@@ -38,7 +38,10 @@ function App() {
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/login" element={<Navigate to="/signin" replace />} />
+          <Route path="/dashboard" element={<Navigate to="/" replace />} />
           <Route path="/documents" element={<Navigate to="/" replace />} />
+          {/* Catch-all for other non-matching routes */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppLayout>
     </BrowserRouter>
