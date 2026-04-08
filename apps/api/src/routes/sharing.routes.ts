@@ -6,6 +6,7 @@ import {
   createShareLink, 
   getCollaborators, 
   removeCollaborator,
+  updateCollaboratorRole,
   isRoleSufficient
 } from "../services/sharing.service";
 
@@ -110,5 +111,32 @@ sharingRoutes.delete("/collaborators/:userId", async (c) => {
   }
 
   await removeCollaborator(docId, targetUserId);
+  return c.json({ success: true });
+});
+
+/**
+ * 5. UPDATE Collaborator Role
+ */
+sharingRoutes.patch("/collaborators/:userId", async (c) => {
+  const currentRole = c.get("userRole");
+  const docId = c.req.param("id");
+  const targetUserId = c.req.param("userId");
+  const { role } = await c.req.json() as { role: string };
+
+  if (!currentRole || !docId || !targetUserId || !role) {
+    return c.json({ error: "Missing context" }, 400);
+  }
+
+  // Only Admin can update roles
+  if (!isRoleSufficient(currentRole, "admin")) {
+    return c.json({ error: "Insufficient permission" }, 403);
+  }
+
+  await updateCollaboratorRole({
+    documentId: docId,
+    userId: targetUserId,
+    role: role as any
+  });
+
   return c.json({ success: true });
 });

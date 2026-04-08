@@ -46,10 +46,9 @@ export async function setupYjsWebsocket(httpServer: any) {
         } catch (err) {
           console.error(`[Yjs_PERSISTENCE_ERROR] Failed to apply initial update for ${docName}:`, err);
         }
-      } else if (doc?.content) {
-        const text = ydoc.getText("default");
-        text.insert(0, doc.content);
       }
+      // Removed backend generation of Yjs state for plain text. 
+      // The frontend will seed the initial content cleanly into the editor to respect Prosemirror schemas.
     },
     writeState: async (_docName: string, _ydoc: Y.Doc) => {
       // Handled in bridgeDocToRedis

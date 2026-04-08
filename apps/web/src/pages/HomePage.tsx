@@ -36,6 +36,17 @@ export function HomePage() {
     },
   });
 
+  const uploadMutation = useMutation({
+    mutationFn: (file: File) => documentService.uploadDocument(file),
+    onSuccess: (doc) => {
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+      navigate(`/documents/${doc.id}`);
+    },
+    onError: (err: any) => {
+      alert(err.message || 'Failed to upload document');
+    }
+  });
+
   const handleCreate = () => {
     const title = prompt('Enter document title:', 'Untitled Document');
     if (title) {
@@ -43,13 +54,21 @@ export function HomePage() {
     }
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      uploadMutation.mutate(file);
+    }
+  };
+
   return (
-    <div className="space-y-10 animate-in fade-in duration-700">
+    <div className="p-8 w-full">
+      <div className="space-y-10 animate-in fade-in max-w-7xl mx-auto duration-700">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
         <div className="flex-1 max-w-2xl">
-          <h1 className="text-4xl font-black tracking-tight text-text-h sm:text-5xl">
+          <div className="text-2xl font-black tracking-tight text-text-h sm:text-3xl">
             My Documents
-          </h1>
+          </div>
           <p className="mt-2 text-lg text-text">
             Manage and collaborate on your real-time documents.
           </p>
@@ -74,14 +93,28 @@ export function HomePage() {
           </div>
         </div>
         
-        <button
-          onClick={handleCreate}
-          disabled={createMutation.isPending}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-8 py-4 text-base font-bold text-white shadow-xl shadow-accent/20 transition-all hover:bg-accent/90 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 h-fit"
-        >
-          <Plus className="h-5 w-5" />
-          New Document
-        </button>
+        <div className="flex items-center gap-3">
+          <label className="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-bg px-6 py-4 text-base font-bold text-text-h transition-all hover:bg-text/5 hover:border-accent/40 active:scale-[0.98] h-fit">
+            <Plus className="h-5 w-5 rotate-45 text-accent" />
+            Upload Local
+            <input 
+              type="file" 
+              className="hidden" 
+              accept=".txt,.pdf,.docx"
+              onChange={handleFileUpload}
+              disabled={uploadMutation.isPending}
+            />
+          </label>
+
+          <button
+            onClick={handleCreate}
+            disabled={createMutation.isPending}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-8 py-4 text-base font-bold text-white shadow-xl shadow-accent/20 transition-all hover:bg-accent/90 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 h-fit"
+          >
+            <Plus className="h-5 w-5" />
+            New Document
+          </button>
+        </div>
       </header>
 
       {isLoading ? (
@@ -150,6 +183,7 @@ export function HomePage() {
           </button>
         </div>
       )}
+    </div>
     </div>
   );
 }

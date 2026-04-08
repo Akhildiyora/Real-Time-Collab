@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, UserPlus, Globe, Copy, Check, Trash2, Shield, Edit2, Eye, Link, Loader2, Mail, Zap } from 'lucide-react';
 
 interface Collaborator {
@@ -16,15 +16,24 @@ interface ShareModalProps {
   onClose: () => void;
   documentTitle: string;
   ownerEmail: string;
+  userRole: string;
 }
 
-export function ShareModal({ documentId, isOpen, onClose, documentTitle, ownerEmail }: ShareModalProps) {
+export function ShareModal({ documentId, isOpen, onClose, documentTitle, ownerEmail, userRole }: ShareModalProps) {
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'admin' | 'editor' | 'viewer'>('editor');
+  const [role, setRole] = useState<'admin' | 'editor' | 'viewer'>('viewer');
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [shareLink, setShareLink] = useState('');
   const [isCopying, setIsCopying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Custom dropdown states
+  const [isInviteRoleOpen, setIsInviteRoleOpen] = useState(false);
+  const [activeRoleDropdown, setActiveRoleDropdown] = useState<string | null>(null);
+
+  // Refs for click-away detection
+  const inviteDropdownRef = useRef<HTMLDivElement>(null);
+  const memberDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen && documentId) {
@@ -32,9 +41,27 @@ export function ShareModal({ documentId, isOpen, onClose, documentTitle, ownerEm
     }
   }, [documentId, isOpen]);
 
+  // Click-away listener
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Close invite dropdown if clicked outside
+      if (inviteDropdownRef.current && !inviteDropdownRef.current.contains(event.target as Node)) {
+        setIsInviteRoleOpen(false);
+      }
+      // Close member list dropdowns if clicked outside
+      if (memberDropdownRef.current && !memberDropdownRef.current.contains(event.target as Node)) {
+        setActiveRoleDropdown(null);
+      }
+    };
+
+    if (isInviteRoleOpen || activeRoleDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isInviteRoleOpen, activeRoleDropdown]);
+
   const fetchCollaborators = async () => {
     try {
-      // FIX: Use "accessToken" instead of "token"
       const token = localStorage.getItem('accessToken');
       if (!token) return;
 
@@ -77,11 +104,32 @@ export function ShareModal({ documentId, isOpen, onClose, documentTitle, ownerEm
     }
   };
 
+  const handleUpdateRole = async (userId: string, newRole: string) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/documents/${documentId}/share/collaborators/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ role: newRole })
+      });
+
+      if (res.ok) {
+        setActiveRoleDropdown(null);
+        fetchCollaborators();
+      }
+    } catch (err) {
+      console.error('Role update failed:', err);
+    }
+  };
+
   const handleGenerateLink = async () => {
     setIsLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/documents/${documentId}/share-links`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/documents/${documentId}/share/share-link`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -101,7 +149,7 @@ export function ShareModal({ documentId, isOpen, onClose, documentTitle, ownerEm
   };
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(shareLink);
+    navigator.clipboard.writeText(shareLink || window.location.href);
     setIsCopying(true);
     setTimeout(() => setIsCopying(false), 2000);
   };
@@ -121,207 +169,214 @@ export function ShareModal({ documentId, isOpen, onClose, documentTitle, ownerEm
 
   if (!isOpen) return null;
 
+  const roles = [
+    { value: 'viewer', label: 'Viewer', icon: Eye, color: 'text-blue-400' },
+    { value: 'editor', label: 'Editor', icon: Edit2, color: 'text-emerald-400' },
+    { value: 'admin', label: 'Admin', icon: Shield, color: 'text-purple-400' }
+  ];
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* 🟢 Premium Backdrop */}
+      {/* 🟢 Soft Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/80 backdrop-blur-xl animate-in fade-in duration-700" 
+        className="absolute inset-0 bg-black/40 backdrop-blur-md animate-in fade-in duration-500" 
         onClick={onClose} 
       />
 
-      {/* 🟢 Overhauled Share Panel */}
-      <div className="relative w-full max-w-xl bg-bg border border-white/[0.08] rounded-[2.5rem] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-700">
+      {/* 🟢 Professional Component Board */}
+      <div className="relative w-full max-w-2xl bg-bg border border-border shadow-[0_32px_128px_-16px_rgba(0,0,0,0.1)] rounded-[3.5rem] overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-700">
         
-        {/* Top Accent Line */}
-        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-accent/40 to-transparent" />
-        <div className="absolute top-0 left-12 w-1/4 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-
-        {/* Header */}
-        <div className="p-8 pb-4">
+        {/* Header Section */}
+        <div className="p-10 pb-6">
           <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
-              <div className="relative group">
-                <div className="absolute -inset-2 bg-accent/20 rounded-[2rem] blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500" />
-                <div className="relative h-14 w-14 rounded-[1.5rem] bg-gradient-to-br from-white/[0.05] to-white/[0.01] border border-white/10 flex items-center justify-center text-accent shadow-inner">
-                  <UserPlus className="h-6 w-6" />
-                </div>
+            <div className="flex items-center gap-6">
+              <div className="h-16 w-16 rounded-[1.8rem] bg-text/[0.02] border border-border flex items-center justify-center text-accent/80 transition-all shadow-sm">
+                <UserPlus className="h-7 w-7" />
               </div>
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xl font-black text-text-h tracking-tight uppercase">Neural_Sync</h3>
-                  <div className="px-2 py-0.5 rounded-full bg-accent/10 border border-accent/20 text-accent text-[9px] font-black tracking-widest uppercase">
-                    RBAC_SECURE
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-2xl font-black text-text-h tracking-tight uppercase leading-none">Share Document</h3>
+                  <div className="px-3 py-1 rounded-full bg-accent/5 border border-accent/20 text-accent text-[9px] font-black tracking-widest uppercase">
+                    Verified Secure
                   </div>
                 </div>
                 <div className="flex flex-col">
-                  <p className="text-[11px] text-text-muted font-bold opacity-40 uppercase tracking-widest">Collaborative Node Permissions</p>
-                  <p className="text-[11px] font-black text-white uppercase tracking-tighter mt-1 flex items-center gap-2">
-                    <Link className="h-3 w-3 text-accent/60" />
-                    {documentTitle}
-                  </p>
+                  <p className="text-[11px] text-text/40 font-bold uppercase tracking-[0.15em]">Manage Sharing & Access</p>
+                  {userRole === 'admin' && (
+                    <button 
+                      onClick={handleCopyLink}
+                      className="flex items-center gap-2 mt-2 text-accent/60 hover:text-accent transition-all group w-fit"
+                    >
+                      <Link className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" />
+                      <span className="text-[10px] font-black uppercase tracking-tighter">Copy link access</span>
+                      {isCopying && <Check className="h-3 w-3 text-green-500 animate-in zoom-in" />}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
             <button 
               onClick={onClose} 
-              className="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.05] hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 text-text-muted/60 transition-all active:scale-90"
+              className="p-3 rounded-2xl hover:bg-red-500/10 hover:text-red-500 text-text/20 transition-all active:scale-90"
             >
-              <X className="h-5 w-5" />
+              <X className="h-6 w-6" />
             </button>
           </div>
         </div>
 
-        <div className="p-8 pt-2 space-y-8">
-          {/* 🟢 Invite Form - Unified Vector Style */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 mb-2 px-1">
-              <Mail className="h-3.5 w-3.5 text-accent/60" />
-              <span className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">Add Neural Collaborator</span>
-            </div>
-            <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1 relative group">
+        <div className="px-10 pb-10 space-y-10">
+          {/* Add Collaborator Section - Only for Admins/Owners */}
+          {userRole === 'admin' && (
+            <div className="space-y-5">
+              <div className="flex items-center gap-2.5 px-1">
+                <Mail className="h-4 w-4 text-accent/40" />
+                <span className="text-[10px] font-black text-text/40 uppercase tracking-[0.2em]">Add a person</span>
+              </div>
+              
+              <form onSubmit={handleInvite} className="flex flex-col sm:flex-row items-center gap-4 bg-text/[0.02] p-2 rounded-[2rem] border border-border/50">
                 <input 
                   type="email"
                   placeholder="Collaborator email address..."
-                  className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-[13px] text-text outline-none focus:border-accent/40 focus:bg-white/[0.05] transition-all"
+                  className="flex-1 bg-transparent px-5 py-3 text-sm text-text-h outline-none transition-all placeholder:text-text/20"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading}
                 />
-              </div>
-              <div className="flex gap-2 h-14">
-                <div className="relative group">
-                  <select 
-                    className="h-full bg-white/[0.03] border border-white/10 rounded-2xl px-4 py-3 text-[11px] text-text outline-none font-black uppercase tracking-wider appearance-none focus:border-accent/40 cursor-pointer min-w-[120px]"
-                    value={role}
-                    onChange={(e) => setRole(e.target.value as any)}
-                  >
-                    <option value="viewer">Viewer</option>
-                    <option value="editor">Editor</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
-                    <Shield className="h-3 w-3" />
+                <div className="flex items-center gap-3 pr-2 relative">
+                  {/* Invite Role Dropdown */}
+                  <div className="relative" ref={inviteDropdownRef}>
+                    <button 
+                      type="button"
+                      onClick={() => setIsInviteRoleOpen(!isInviteRoleOpen)}
+                      className="flex items-center gap-2 px-4 py-2 hover:bg-text/5 rounded-xl transition-all group"
+                    >
+                      <span className="text-[10px] font-black text-text-h uppercase tracking-widest">{role}</span>
+                      <Shield className={`h-3.5 w-3.5 transition-colors ${isInviteRoleOpen ? 'text-accent' : 'text-text/20'}`} />
+                    </button>
+  
+                    {isInviteRoleOpen && (
+                      <div className="absolute bottom-full mb-3 right-0 bg-bg border border-border rounded-2xl shadow-2xl p-2 min-w-[140px] z-[110] animate-in slide-in-from-bottom-2">
+                         {roles.map((r) => (
+                           <button
+                             key={r.value}
+                             type="button"
+                             onClick={() => {
+                               setRole(r.value as any);
+                               setIsInviteRoleOpen(false);
+                             }}
+                             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                               role === r.value ? 'bg-accent/10 text-accent' : 'text-text/40 hover:bg-text/5'
+                             }`}
+                           >
+                             {r.label}
+                             <r.icon className="h-3 w-3" />
+                           </button>
+                         ))}
+                      </div>
+                    )}
                   </div>
+                  
+                  <button 
+                    type="submit"
+                    disabled={isLoading || !email.trim()}
+                    className="px-8 h-12 bg-zinc-400 hover:bg-zinc-500 text-white font-black text-[11px] uppercase tracking-widest rounded-2xl active:scale-[0.97] transition-all flex items-center gap-3 disabled:opacity-40 shadow-xl shadow-zinc-200 dark:shadow-none"
+                  >
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4 fill-current" />}
+                    Grant Access
+                  </button>
                 </div>
-                <button 
-                  type="submit"
-                  disabled={isLoading || !email.trim()}
-                  className="px-6 bg-accent text-bg font-black text-[11px] uppercase tracking-widest rounded-2xl hover:brightness-110 active:scale-[0.97] transition-all shadow-xl shadow-accent/20 flex items-center gap-2 whitespace-nowrap group disabled:opacity-50 disabled:grayscale"
-                >
-                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4 fill-current group-hover:animate-pulse" />}
-                  GRANT_ACCESS
-                </button>
-              </div>
-            </form>
-          </div>
+              </form>
+            </div>
+          )}
 
-          {/* 🟢 Collaborator List - Glass Cards Area */}
-          <div className="space-y-4">
+          {/* People with access list */}
+          <div className="space-y-5">
              <div className="flex items-center justify-between px-1">
-               <h4 className="text-[10px] font-black text-text-muted uppercase tracking-[0.3em]">Access Collective</h4>
-               <span className="text-[8px] font-black text-accent/50 uppercase tracking-widest">{collaborators.length} ACTIVE_CHANNELS</span>
+               <h4 className="text-[10px] font-black text-text/40 uppercase tracking-[0.3em]">People with access</h4>
+               <span className="text-[9px] font-black text-accent/40 uppercase tracking-widest">{collaborators.length + 1} ACTIVE USERS</span>
              </div>
              
-             <div className="space-y-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
-                {/* Always show owner first */}
-                <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] ring-1 ring-white/[0.02]">
-                   <div className="flex items-center gap-4">
-                     <div className="h-10 w-10 rounded-xl bg-accent/20 border border-accent/40 flex items-center justify-center text-accent text-xs font-black shadow-inner">
+             <div className="grid gap-3 max-h-[280px] overflow-y-auto pr-2 custom-scrollbar">
+                {/* Owner */}
+                <div className="flex items-center justify-between p-5 rounded-3xl bg-bg border border-border shadow-sm">
+                   <div className="flex items-center gap-5">
+                     <div className="h-12 w-12 rounded-[1.2rem] bg-accent/10 border border-accent/20 flex items-center justify-center text-accent text-sm font-black transition-all">
                        {ownerEmail[0].toUpperCase()}
                      </div>
                      <div>
-                        <p className="text-[13px] font-black text-text tracking-tight">{ownerEmail}</p>
-                        <div className="flex items-center gap-1.5 text-[10px] text-accent/60 font-black uppercase tracking-[0.2em] mt-0.5">
+                        <p className="text-sm font-black text-text-h tracking-tight">{ownerEmail}</p>
+                        <div className="flex items-center gap-1.5 text-[9px] text-accent/50 font-black uppercase tracking-[0.2em] mt-1">
                            <Shield className="h-3 w-3" />
-                           Node Owner
+                           Owner
                         </div>
                      </div>
                    </div>
                 </div>
 
                 {collaborators.filter(c => c.user.email !== ownerEmail).map((c) => (
-                  <div key={c.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.05] transition-all group/item">
-                     <div className="flex items-center gap-4">
-                       <div className="h-10 w-10 rounded-xl bg-white/[0.08] border border-white/5 flex items-center justify-center text-xs font-black text-white/40 group-hover/item:text-accent group-hover/item:border-accent/30 transition-all">
+                  <div key={c.id} className="flex items-center justify-between p-5 rounded-3xl bg-bg border border-border/50 hover:bg-text/[0.01] transition-all group relative">
+                     <div className="flex items-center gap-5 w-full">
+                       <div className="h-12 w-12 rounded-[1.2rem] bg-text/[0.03] border border-border/50 flex items-center justify-center text-sm font-black text-text/40 group-hover:text-accent group-hover:border-accent/40 transition-all">
                          {c.user.email[0].toUpperCase()}
                        </div>
-                       <div>
-                          <p className="text-[13px] font-black text-text tracking-tight">{c.user.email}</p>
-                          <div className="flex items-center gap-1.5 text-[9px] text-text-muted font-black uppercase tracking-[0.2em] mt-0.5 group-hover/item:text-accent/60 transition-all">
-                             {c.role === 'admin' ? <Shield className="h-3 w-3" /> : c.role === 'editor' ? <Edit2 className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                             {c.role} Mode
+                       <div className="flex items-center justify-between w-full">
+                          <p className="text-sm font-black text-text-h tracking-tight">{c.user.email}</p>
+                          
+                          {/* Member Role Dropdown Toggle */}
+                          <div className="relative z-50 " ref={activeRoleDropdown === c.id ? memberDropdownRef : null}>
+                            {userRole === 'admin' ? (
+                              <button 
+                                onClick={() => setActiveRoleDropdown(activeRoleDropdown === c.id ? null : c.id)}
+                                className="flex items-center gap-1.5 text-[9px] text-text/30 font-black uppercase tracking-[0.2em] mt-1 hover:text-accent transition-all"
+                              >
+                                {c.role === 'viewer' ? <Eye className="h-3 w-3" /> : c.role === 'admin' ? <Shield className="h-3 w-3" /> : <Edit2 className="h-3 w-3" />}
+                                {c.role}
+                              </button>
+                            ) : (
+                              <div className="flex items-center gap-1.5 text-[9px] text-text/20 font-black uppercase tracking-[0.2em] mt-1 grayscale opacity-60">
+                                {c.role === 'viewer' ? <Eye className="h-3 w-3" /> : c.role === 'admin' ? <Shield className="h-3 w-3" /> : <Edit2 className="h-3 w-3" />}
+                                {c.role}
+                              </div>
+                            )}
+
+                            {activeRoleDropdown === c.id && (
+                              <div className="absolute bottom-full left-0 mb-2 bg-bg border border-border rounded-2xl shadow-2xl p-2 min-w-[140px] z-[120] animate-in zoom-in-95 slide-in-from-bottom-2">
+                                 {roles.map((r) => (
+                                   <button
+                                     key={r.value}
+                                     onClick={() => handleUpdateRole(c.user.id, r.value)}
+                                     className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                                       c.role === r.value ? 'bg-accent/10 text-accent' : 'text-text/40 hover:bg-text/5'
+                                     }`}
+                                   >
+                                     {r.label}
+                                     <r.icon className="h-3 w-3" />
+                                   </button>
+                                 ))}
+                              </div>
+                            )}
                           </div>
                        </div>
                      </div>
-                     <button 
-                      onClick={() => handleRemoveCollaborator(c.user.id)}
-                      className="p-3 rounded-xl hover:bg-red-500/10 text-red-500/20 hover:text-red-500 transition-all transform scale-90 opacity-0 group-hover/item:opacity-100 group-hover/item:scale-100"
-                     >
-                       <Trash2 className="h-5 w-5" />
-                     </button>
+                      {userRole === 'admin' && (
+                        <button 
+                          onClick={() => handleRemoveCollaborator(c.user.id)}
+                          className="p-3 rounded-2xl hover:bg-red-500/10 text-red-500/20 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </button>
+                      )}
                   </div>
                 ))}
-
-                {collaborators.length === 0 && (
-                  <div className="py-12 border-2 border-dashed border-white/5 rounded-[2.5rem] flex flex-col items-center justify-center gap-2">
-                    <UserPlus className="h-8 w-8 text-white/5" />
-                    <p className="text-[10px] font-black text-text-muted/30 uppercase tracking-widest">No active collaborators</p>
-                  </div>
-                )}
              </div>
-          </div>
-
-          {/* 🟢 Public Access Section - Vector Bridge Style */}
-          <div className="p-1">
-             {!shareLink ? (
-               <button 
-                onClick={handleGenerateLink}
-                disabled={isLoading}
-                className="w-full h-14 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center gap-3 text-[11px] font-black text-white/60 hover:text-accent hover:border-accent/40 transition-all active:scale-[0.98] group"
-               >
-                 {isLoading ? (
-                   <Loader2 className="h-4 w-4 animate-spin text-accent" />
-                 ) : (
-                   <Globe className="h-4 w-4 group-hover:scale-110 transition-all duration-500 group-hover:text-accent" />
-                 )}
-                 GENERATE_PUBLIC_ACCESS_VECTOR
-               </button>
-             ) : (
-               <div className="space-y-4 p-6 rounded-[2rem] bg-accent/5 border border-accent/20 ring-1 ring-accent/10 animate-in slide-in-from-top-4 duration-500 shadow-2xl shadow-accent/5">
-                  <div className="flex items-center justify-between">
-                     <div className="flex items-center gap-2 text-accent">
-                        <Globe className="h-4 w-4" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em]">Public Share Vector Active</span>
-                     </div>
-                     <button 
-                      onClick={() => setShareLink('')}
-                      className="text-[9px] font-black text-text-muted/40 hover:text-red-400 uppercase tracking-tighter"
-                     >
-                       Revoke
-                     </button>
-                  </div>
-                  <div className="flex gap-2">
-                     <div className="flex-1 bg-black/60 border border-white/5 rounded-xl px-4 py-3 text-[10px] text-text-muted font-mono outline-none flex items-center overflow-hidden">
-                       <span className="truncate opacity-60 italic">{shareLink}</span>
-                     </div>
-                     <button 
-                      onClick={handleCopyLink}
-                      className="p-3 bg-accent text-bg shadow-lg shadow-accent/30 rounded-xl hover:brightness-110 active:scale-90 transition-all"
-                     >
-                       {isCopying ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
-                     </button>
-                  </div>
-               </div>
-             )}
           </div>
         </div>
 
         {/* Footer info */}
-        <div className="px-8 py-6 bg-white/[0.02] border-t border-white/5 flex items-center justify-center">
-           <div className="flex items-center gap-2 opacity-30 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-default">
-              <Shield className="h-3 w-3 text-accent" />
-              <span className="text-[8px] font-black uppercase tracking-widest text-text-h">Neural_Protocol_v2.0_Secure</span>
+        <div className="px-10 py-8 bg-text/[0.02] border-t border-border/40 flex items-center justify-center">
+           <div className="flex items-center gap-2.5 opacity-20 grayscale hover:opacity-100 hover:grayscale-0 transition-all cursor-default">
+              <Shield className="h-3.5 w-3.5 text-accent" />
+              <span className="text-[9px] font-black uppercase tracking-widest text-text-h">Neural_Protocol_v2.0_Secure</span>
            </div>
         </div>
       </div>

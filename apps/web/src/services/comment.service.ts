@@ -24,10 +24,13 @@ class CommentService {
 
   private getHeaders() {
     const token = useAuthStore.getState().accessToken;
-    return {
+    const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
     };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    return headers;
   }
 
   async getComments(documentId: string, shareToken?: string): Promise<EditorComment[]> {

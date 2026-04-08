@@ -109,6 +109,25 @@ export async function removeCollaborator(documentId: string, userId: string) {
 }
 
 /**
+ * Updates a collaborator's role.
+ */
+export async function updateCollaboratorRole(params: {
+  documentId: string;
+  userId: string;
+  role: DocumentRole;
+}) {
+  return prisma.documentCollaborator.update({
+    where: {
+      documentId_userId: {
+        documentId: params.documentId,
+        userId: params.userId,
+      },
+    },
+    data: { role: params.role },
+  });
+}
+
+/**
  * Helper to check if a user has sufficient role level.
  */
 export function isRoleSufficient(currentRole: string, requiredRole: DocumentRole): boolean {

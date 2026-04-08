@@ -16,40 +16,40 @@ export const CommentSidebar: React.FC<{
   );
 
   return (
-    <div className="w-[400px] border-l border-white/5 h-full flex flex-col bg-bg/95 backdrop-blur-3xl animate-in slide-in-from-right duration-700 shadow-[-50px_0_150px_rgba(0,0,0,0.8)] z-50">
-      <div className="p-10 border-b border-white/5 flex justify-between items-center bg-white/05">
+    <div className="w-[400px] border-l border-white/5 h-full flex flex-col bg-[#09090b]/80 backdrop-blur-3xl animate-in slide-in-from-right duration-700 z-50">
+      <div className="px-8 py-6 border-b border-white/5 flex justify-between items-center">
         <div className="flex items-center gap-4">
-           <div className="p-3 bg-accent/20 rounded-2xl border border-accent/20">
-              <MessageSquare className="h-5 w-5 text-accent" />
+           <div className="p-2.5 bg-accent/10 rounded-xl border border-accent/10">
+              <MessageSquare className="h-4 w-4 text-accent" />
            </div>
            <div className="flex flex-col">
-              <h2 className="text-[14px] font-black uppercase tracking-[0.4em] text-white">Neural Trace</h2>
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/20 mt-1">Comments Registry</span>
+              <h2 className="text-[11px] font-black uppercase tracking-[0.3em] text-white leading-none">Neural Feed</h2>
+              <span className="text-[7px] font-black uppercase tracking-[0.1em] text-white/20 mt-1">Comments Registry</span>
            </div>
         </div>
-        <button onClick={onClose} className="p-4 hover:bg-white/5 text-white/20 hover:text-white rounded-2xl transition-all border border-transparent hover:border-white/5 active:scale-90"><X size={20} /></button>
+        <button onClick={onClose} className="p-2 hover:bg-white/5 text-white/20 hover:text-white rounded-lg transition-all border border-transparent hover:border-white/5 active:scale-90"><X size={16} /></button>
       </div>
 
-      <div className="flex p-6 gap-3 bg-white/02">
+      <div className="flex px-8 py-4 gap-2 bg-white/[0.02]">
         <button
           onClick={() => setActiveTab("active")}
-          className={`flex-1 py-4 text-[10px] font-black uppercase tracking-[0.3em] rounded-2xl transition-all duration-500 border ${
-            activeTab === "active" ? "bg-accent text-bg border-accent shadow-[0_10px_30px_var(--color-accent)]" : "text-white/40 border-white/5 hover:bg-white/5"
+          className={`flex-1 py-2 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all duration-300 border ${
+            activeTab === "active" ? "bg-accent/20 text-accent border-accent/30 shadow-lg shadow-accent/5" : "text-white/20 border-white/5 hover:bg-white/5"
           }`}
         >
           Active
         </button>
         <button
           onClick={() => setActiveTab("resolved")}
-          className={`flex-1 py-4 text-[10px] font-black uppercase tracking-[0.3em] rounded-2xl transition-all duration-500 border ${
-            activeTab === "resolved" ? "bg-accent text-bg border-accent shadow-[0_10px_30px_var(--color-accent)]" : "text-white/40 border-white/5 hover:bg-white/5"
+          className={`flex-1 py-2 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all duration-300 border ${
+            activeTab === "resolved" ? "bg-accent/20 text-accent border-accent/30 shadow-lg shadow-accent/5" : "text-white/20 border-white/5 hover:bg-white/5"
           }`}
         >
           Resolved
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-hide">
+      <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6 no-scrollbar custom-scrollbar">
         {filteredComments.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-32 text-center opacity-20">
             <Hash className="h-12 w-12 mb-6" />

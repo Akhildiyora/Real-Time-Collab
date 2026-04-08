@@ -6,12 +6,9 @@ import { commentService, type EditorComment } from '../services/comment.service'
 import { useAuthStore } from '../store/auth.store';
 import { NeuralEditor } from '../components/editor/NeuralEditor';
 import { ShareModal } from '../components/sharing/ShareModal';
+import { DocumentNavigation } from '../components/DocumentNavigation';
+import { CommentSidebar } from '../components/editor/CommentSidebar';
 import { 
-  ArrowLeft, 
-  Share2, 
-  History, 
-  MessageSquare, 
-  ChevronRight,
   ShieldAlert,
   Loader2
 } from 'lucide-react';
@@ -30,8 +27,11 @@ export function DocumentEditorPage() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isCommentsOpen, setIsCommentsOpen] = useState(true);
 
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'offline' | 'error'>('saved');
+  const [isOnline, setIsOnline] = useState(true);
+
   // 1. Fetch Document (Support sharing token)
-  const { data: document, isLoading, error } = useQuery<EditorDocument & { currentUserRole?: string }>({
+  const { data: document, isLoading, error } = useQuery<EditorDocument & { currentUserRole?: string, owner?: { email: string } }>({
     queryKey: ['document', id, shareToken],
     queryFn: () => documentService.getDocument(id!, shareToken || undefined),
     enabled: !!id,
@@ -43,7 +43,7 @@ export function DocumentEditorPage() {
     queryKey: ['comments', id, shareToken],
     queryFn: () => commentService.getComments(id!, shareToken || undefined),
     enabled: !!id,
-    refetchInterval: 5000 // Poll for new comments if WS is sync-only
+    refetchInterval: 5000 
   });
 
   // 3. Mutations
@@ -86,7 +86,7 @@ export function DocumentEditorPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['comments', id] })
   });
   
-  // Memoized handlers to prevent NeuralEditor re-mounts
+  // Handlers
   const handleAddComment = useCallback(async (content: string, anchorData: any) => {
     await addCommentMutation.mutateAsync({ content, anchorData });
   }, [id, addCommentMutation]);
@@ -124,7 +124,7 @@ export function DocumentEditorPage() {
     }
   }, [id, queryClient]);
 
-  // Authenticated check: Skip if we have a valid share token
+  // Authenticated check
   useEffect(() => {
     if (!authLoading && !user && !shareToken) {
       navigate('/login');
@@ -167,90 +167,58 @@ export function DocumentEditorPage() {
   const userRole = document.currentUserRole || (document.ownerId === user?.id ? 'admin' : 'viewer');
 
   return (
-    <div className="h-screen w-full bg-bg flex flex-col overflow-hidden text-text-h">
-      {/* Neural Navigation Shell */}
-      <header className="min-h-[5rem] py-3 border-b border-white/5 bg-bg/80 backdrop-blur-2xl flex flex-col md:flex-row items-center justify-between px-6 md:px-8 z-30 shrink-0 gap-4 md:gap-0">
-        <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto">
-          <button 
-            onClick={() => navigate('/dashboard')}
-            title="Return to Dashboard"
-            className="p-3 rounded-2xl hover:bg-white/5 text-text-muted hover:text-accent transition-all duration-300 group"
-          >
-            <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
-          </button>
-          
-          <div className="h-10 w-[1px] bg-white/10 hidden md:block" />
-          
-          <div className="flex-1 md:flex-none truncate">
-            <div className="flex items-center gap-2 mb-0.5 truncate">
-              <h1 className="text-base md:text-lg font-black tracking-tight leading-none truncate">{document.title}</h1>
-              <div className="px-2 py-0.5 rounded-md bg-accent/10 border border-accent/20 flex items-center gap-1 shrink-0">
-                <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-                <span className="text-[9px] md:text-[10px] font-black text-accent uppercase tracking-tighter">Live</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 md:gap-2 text-[9px] md:text-[10px] font-bold text-text-muted uppercase tracking-widest truncate">
-              <span className="truncate max-w-[100px] md:max-w-none">{document.owner?.email}</span>
-              <ChevronRight className="h-3 w-3 opacity-30 shrink-0" />
-              <span className="text-accent/70 shrink-0">{userRole}</span>
-            </div>
-          </div>
-        </div>
+    <div className="flex flex-1 flex-col overflow-hidden bg-bg text-text-h">
+      <DocumentNavigation
+        title={document.title}
+        ownerEmail={document.owner?.email || ''}
+        userRole={userRole}
+        isCommentsOpen={isCommentsOpen}
+        isHistoryOpen={isHistoryOpen}
+        onBack={() => navigate('/documents')}
+        onToggleComments={() => setIsCommentsOpen((open) => !open)}
+        onToggleHistory={() => setIsHistoryOpen((open) => !open)}
+        onOpenShare={() => setIsShareModalOpen(true)}
+        saveStatus={saveStatus}
+        onStatusChange={setSaveStatus}
+        isOnline={isOnline}
+        documentId={id}
+      />
 
-        <div className="flex items-center justify-between md:justify-end gap-2 md:gap-3 w-full md:w-auto border-t border-white/5 pt-3 md:pt-0 md:border-t-0">
-          <div className="flex -space-x-2 mr-2 md:mr-4">
-             {/* Collaborative Avatars Placeholder */}
-             <div className="h-8 w-8 rounded-full border-2 border-bg bg-accent/20 flex items-center justify-center text-[10px] font-black ring-1 ring-white/5" title="You">{user?.email?.[0].toUpperCase()}</div>
-             <div className="h-8 w-8 rounded-full border-2 border-bg bg-blue-500/20 flex items-center justify-center text-[10px] font-black ring-1 ring-white/5" title="3 other active collaborators">+3</div>
+      <main className="flex-1 flex w-full max-w-7xl px-4 sm:px-6 lg:px-10 mx-auto overflow-hidden relative">
+        <section className="flex-1 flex flex-col w-full relative overflow-hidden">
+          <div className="flex-1 overflow-hidden">
+            <NeuralEditor
+              documentId={id!}
+              initialContent={document.content}
+              currentUser={user}
+              onAddComment={handleAddComment}
+              onSyncEvent={handleSyncEvent}
+              userRole={userRole}
+              shareToken={shareToken}
+              onStatusChange={setSaveStatus}
+              onOnlineChange={setIsOnline}
+            />
           </div>
+        </section>
 
-          <div className="flex items-center gap-1.5 md:gap-2">
-            <button 
-              onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-              title="View History & Timeline"
-              className={`p-3 rounded-2xl transition-all duration-500 ${isHistoryOpen ? 'bg-accent text-white shadow-[0_0_20px_rgba(var(--accent-rgb),0.3)]' : 'hover:bg-white/5 text-text-muted hover:text-accent'}`}
-            >
-              <History className="h-5 w-5" />
-            </button>
-            
-            <button 
-              onClick={() => setIsCommentsOpen(!isCommentsOpen)}
-              title="Toggle Neural Feedback"
-              className={`p-3 rounded-2xl transition-all duration-500 ${isCommentsOpen ? 'bg-accent text-white shadow-[0_0_20px_rgba(var(--accent-rgb),0.3)]' : 'hover:bg-white/5 text-text-muted hover:text-accent'}`}
-            >
-              <MessageSquare className="h-5 w-5" />
-            </button>
-  
-            {userRole === 'admin' && (
-              <button 
-                onClick={() => setIsShareModalOpen(true)}
-                className="bg-white text-bg px-4 md:px-6 py-2.5 md:py-3 rounded-xl md:rounded-2xl font-black text-[10px] md:text-[11px] uppercase tracking-widest hover:bg-accent hover:text-white transition-all duration-300 flex items-center gap-2 shadow-2xl active:scale-95"
-              >
-                <Share2 className="h-3.5 w-3.5" />
-                <span className="hidden xs:inline">Secure Share</span>
-              </button>
+        {(isCommentsOpen || isHistoryOpen) && (
+          <aside className="w-96 hidden lg:flex border-l border-white/5 bg-slate-900/40 backdrop-blur-3xl animate-in slide-in-from-right duration-500">
+            {isCommentsOpen && (
+              <CommentSidebar
+                comments={comments}
+                selectedCommentId={null}
+                onSelectComment={() => {}}
+                onReply={handleReply}
+                onResolve={handleResolve}
+                onUpdateComment={handleUpdateComment}
+                onDeleteComment={handleDeleteComment}
+                onUpdateReply={handleUpdateReply}
+                onDeleteReply={handleDeleteReply}
+                currentUser={user}
+              />
             )}
-          </div>
-        </div>
-      </header>
-
-      {/* Main Workspace Frame */}
-      <main className="flex-1 flex overflow-hidden relative">
-        <NeuralEditor
-          documentId={id!}
-          currentUser={user}
-          comments={comments}
-          onAddComment={handleAddComment}
-          onReply={handleReply}
-          onResolve={handleResolve}
-          onUpdateComment={handleUpdateComment}
-          onDeleteComment={handleDeleteComment}
-          onUpdateReply={handleUpdateReply}
-          onDeleteReply={handleDeleteReply}
-          onSyncEvent={handleSyncEvent}
-          userRole={userRole}
-          shareToken={shareToken}
-        />
+          </aside>
+        )}
       </main>
 
       <ShareModal
@@ -259,6 +227,7 @@ export function DocumentEditorPage() {
         documentId={id!}
         documentTitle={document.title}
         ownerEmail={document.owner?.email || ''}
+        userRole={userRole}
       />
     </div>
   );

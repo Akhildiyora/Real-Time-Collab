@@ -10,6 +10,10 @@ export interface EditorDocument {
   updatedAt: string;
   userRole?: string;
   comments?: EditorComment[];
+  owner?: {
+    email: string;
+    name?: string;
+  };
 }
 
 class DocumentService {
@@ -99,6 +103,27 @@ class DocumentService {
       headers: this.getHeaders(),
     });
     if (!res.ok) throw new Error("Failed to search documents");
+    return res.json();
+  }
+
+  async uploadDocument(file: File): Promise<EditorDocument> {
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    // Custom headers because we don't want Content-Type: application/json here (fetch sets it for FormData)
+    const token = useAuthStore.getState().accessToken;
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const res = await fetch(`${this.apiUrl}/documents/upload`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Failed to upload document");
+    }
     return res.json();
   }
 }

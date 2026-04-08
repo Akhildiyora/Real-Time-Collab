@@ -28,6 +28,7 @@ import {
   exportPDFController,
   exportDOCXController
 } from "../controllers/export.controller";
+import { uploadDocumentController } from "../controllers/upload.controller";
 
 export const documentRoutes = new Hono();
 
@@ -36,6 +37,7 @@ documentRoutes.get("/documents", authMiddleware, listDocumentsController);
 documentRoutes.get("/documents/search", authMiddleware, searchDocumentsController);
 documentRoutes.post("/documents", authMiddleware, createDocumentController);
 documentRoutes.post("/documents/seed", authMiddleware, seedDocumentsController);
+documentRoutes.post("/documents/upload", authMiddleware, uploadDocumentController);
 
 // 2. Resource Routes (Support JWT OR Public Share Token)
 // documentAccessMiddleware handles both cases

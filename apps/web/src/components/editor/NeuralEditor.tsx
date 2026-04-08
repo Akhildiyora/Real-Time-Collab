@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useEditor, EditorContent, ReactRenderer, BubbleMenu } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Collaboration from '@tiptap/extension-collaboration';
@@ -10,26 +10,21 @@ import { WebsocketProvider } from 'y-websocket';
 import { IndexeddbPersistence } from 'y-indexeddb';
 import debounce from 'lodash/debounce';
 import tippy from 'tippy.js';
-import { CommentSidebar } from './CommentSidebar';
 import { NeuralSelectionCallback } from './NeuralSelectionCallback';
 import { MentionList } from './MentionList';
-import { Bell, Shield, Eye, Edit3, CloudOff, Loader2, Zap, MessageSquarePlus, Send } from 'lucide-react';
+import { Bell, MessageSquarePlus, Send } from 'lucide-react';
 import { documentService } from '../../services/document.service';
 
 interface NeuralEditorProps {
   documentId: string;
   currentUser: any;
-  comments: any[];
   onAddComment: (content: string, anchorData: any) => Promise<any>;
-  onReply: (commentId: string, content: string) => Promise<any>;
-  onResolve: (commentId: string) => Promise<any>;
-  onUpdateComment: (commentId: string, content: string) => Promise<any>;
-  onDeleteComment: (commentId: string) => Promise<any>;
-  onUpdateReply: (replyId: string, content: string) => Promise<any>;
-  onDeleteReply: (replyId: string) => Promise<any>;
   onSyncEvent?: (event: { type: string, payload?: any, kind?: string }) => void;
   userRole?: string;
   shareToken?: string | null;
+  initialContent?: string;
+  onStatusChange?: (status: 'saved' | 'saving' | 'offline' | 'error') => void;
+  onOnlineChange?: (online: boolean) => void;
 }
 
 function getNeuralAvatarColor(email: string) {
@@ -41,34 +36,36 @@ function getNeuralAvatarColor(email: string) {
 
 import React from 'react';
 
+import { EditorToolbar } from './EditorToolbar';
+
 export const NeuralEditor = React.memo(({
   documentId,
   currentUser,
-  comments,
   onAddComment,
-  onReply,
-  onResolve,
-  onUpdateComment,
-  onDeleteComment,
-  onUpdateReply,
-  onDeleteReply,
   onSyncEvent,
   userRole = 'viewer',
-  shareToken = null
+  shareToken = null,
+  initialContent,
+  onStatusChange,
+  onOnlineChange
 }: NeuralEditorProps) => {
   const [provider, setProvider] = useState<WebsocketProvider | null>(null);
-  const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
   const [commentInput, setCommentInput] = useState('');
   const [isAddingComment, setIsAddingComment] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Phase 9: Save Status & Persistence
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'offline' | 'error'>('saved');
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  // Status management
+  const setSaveStatus = useCallback((status: 'saved' | 'saving' | 'offline' | 'error') => {
+    onStatusChange?.(status);
+  }, [onStatusChange]);
+
+  const setIsOnline = useCallback((online: boolean) => {
+    onOnlineChange?.(online);
+  }, [onOnlineChange]);
 
   const isViewer = userRole === 'viewer';
   const yDoc = useMemo(() => new Y.Doc(), []);
+  const hasSeededOriginalData = useRef(false);
 
   // Sync Network Status
   useEffect(() => {
@@ -80,7 +77,7 @@ export const NeuralEditor = React.memo(({
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [setIsOnline]);
 
   // Helper: Convert Uint8Array to Base64 safely
   const toBase64 = useCallback((Uint8Arr: Uint8Array) => {
@@ -94,7 +91,7 @@ export const NeuralEditor = React.memo(({
 
   // Phase 9: Debounced Cloud Sync
   const debouncedSync = useMemo(
-    () => debounce(async (doc: Y.Doc) => {
+    () => debounce(async (doc: Y.Doc, html: string) => {
       if (!navigator.onLine || isViewer) return;
 
       try {
@@ -103,7 +100,8 @@ export const NeuralEditor = React.memo(({
         const base64State = toBase64(state);
         
         await documentService.updateDocument(documentId, {
-          yjsState: base64State
+          yjsState: base64State,
+          content: html // Storing HTML for formatted export
         });
         
         setSaveStatus('saved');
@@ -112,7 +110,7 @@ export const NeuralEditor = React.memo(({
         setSaveStatus('error');
       }
     }, 2000),
-    [documentId, isViewer, toBase64]
+    [documentId, isViewer, toBase64, setSaveStatus]
   );
 
   // Determine the name to show in the presence system
@@ -192,7 +190,7 @@ export const NeuralEditor = React.memo(({
     shouldRerenderOnTransaction: false,
   }, [provider, isViewer, yDoc]);
 
-  // Phase 7: Add Comment Logic (Moved here to fix declaration order)
+  // Phase 7: Add Comment Logic
   const handleAddComment = useCallback(async () => {
     if (!editor || !commentInput.trim() || isViewer) return;
 
@@ -202,7 +200,7 @@ export const NeuralEditor = React.memo(({
     try {
       const type = yDoc.getXmlFragment('default');
       const anchorData = {
-        from: Y.createRelativePositionFromTypeIndex(type, from - 1), // Tiptap is 1-indexed, Yjs is 0-indexed
+        from: Y.createRelativePositionFromTypeIndex(type, from - 1),
         to: Y.createRelativePositionFromTypeIndex(type, to - 1),
       };
 
@@ -219,15 +217,10 @@ export const NeuralEditor = React.memo(({
   useEffect(() => {
     if (!documentId) return;
 
-    // 1. Local Persistence (IndexedDB)
     const persistence = new IndexeddbPersistence(documentId, yDoc);
-    
-    // 2. Real-time Sync (WebSocket)
     const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3000';
-    // FIX: Using CORRECT storage key "accessToken"
     const jwtToken = (localStorage.getItem('accessToken') || '').replace(/^Bearer\s+/i, "");
     
-    // Pass JWT to server for authentication over WebSocket
     const newProvider = new WebsocketProvider(
       wsUrl,
       documentId,
@@ -239,16 +232,25 @@ export const NeuralEditor = React.memo(({
       }
     );
 
+    const handleSync = (isSynced: boolean) => {
+      if (isSynced && !hasSeededOriginalData.current && !isViewer && initialContent) {
+        hasSeededOriginalData.current = true;
+        
+        // Let Tiptap initialize its collaboration wrapper
+        setTimeout(() => {
+          if (editor && editor.isEmpty) {
+            editor.commands.setContent(initialContent);
+          }
+        }, 150);
+      }
+    };
+    newProvider.on('sync', handleSync);
+
     newProvider.on('status', ({ status }: { status: string }) => {
-      if (status === 'connected') {
-        setSaveStatus('saved');
-      }
-      if (status === 'disconnected') {
-        setSaveStatus('offline');
-      }
+      if (status === 'connected') setSaveStatus('saved');
+      if (status === 'disconnected') setSaveStatus('offline');
     });
 
-    // Custom events
     newProvider.on('message', (data: any) => {
       try {
         const parsed = JSON.parse(data);
@@ -259,21 +261,17 @@ export const NeuralEditor = React.memo(({
           setNotification(parsed.payload.message);
           setTimeout(() => setNotification(null), 5000);
         }
-      } catch {
-        // Ignored
-      }
+      } catch { /* Ignored */ }
     });
 
-    // 3. Watch for changes to trigger autosave
     yDoc.on('update', (_update: Uint8Array, origin: any) => {
-      if (origin !== newProvider && !isViewer) {
-         debouncedSync(yDoc);
+      if (origin !== newProvider && !isViewer && editor) {
+         debouncedSync(yDoc, editor.getHTML());
       }
     });
 
     setProvider(newProvider);
 
-    // Cleanup on unmount (with safety delay for StrictMode)
     return () => {
       setTimeout(() => {
         if (newProvider) {
@@ -286,113 +284,14 @@ export const NeuralEditor = React.memo(({
       debouncedSync.cancel();
       yDoc.off('update', () => {});
     };
-  }, [documentId, shareToken, onSyncEvent, yDoc, debouncedSync, isViewer]);
+  }, [documentId, shareToken, onSyncEvent, yDoc, debouncedSync, isViewer, setSaveStatus, setIsOnline, editor, initialContent]);
 
   if (!editor) return null;
 
   return (
-    <div className="flex h-full w-full relative group bg-bg">
-      {/* 🟢 Refined Header Overlay - Relocated to Bottom Right to prevent toolbar overlap */}
-      <div className="fixed bottom-8 right-8 z-[60] flex flex-col items-end gap-3 pointer-events-none sm:flex-row sm:items-center animate-in fade-in slide-in-from-bottom-4 duration-1000">
-         
-         {/* Sync Status Badge */}
-         <div className="h-11 px-4 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-3xl flex items-center gap-3 transition-all duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.4)] pointer-events-auto group/status">
-           <div className="relative">
-             {!isOnline ? (
-               <CloudOff className="h-4 w-4 text-red-400" />
-             ) : saveStatus === 'saving' ? (
-               <Loader2 className="h-4 w-4 animate-spin text-accent" />
-             ) : (
-               <Zap className={`h-4 w-4 ${saveStatus === 'saved' ? 'text-green-400' : 'text-white/40'}`} />
-             )}
-             {isOnline && saveStatus === 'saved' && (
-               <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-green-400 animate-ping" />
-             )}
-           </div>
-           
-           <div className="flex flex-col">
-             <span className={`text-[10px] font-black uppercase tracking-widest leading-none ${
-               !isOnline ? 'text-red-400' : saveStatus === 'saving' ? 'text-accent' : 'text-white/60'
-             }`}>
-               {!isOnline ? 'Offline' : 
-                saveStatus === 'saving' ? 'Syncing...' : 
-                saveStatus === 'error' ? 'Sync Void' : 
-                'Connected'}
-             </span>
-             <span className="text-[7px] font-bold uppercase tracking-tighter opacity-40">
-               {saveStatus === 'saved' ? 'Vector Secure' : 'Neural Patching'}
-             </span>
-           </div>
-         </div>
-
-         {/* Access & Presence Badge */}
-         <div className="h-11 px-4 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-3xl flex items-center gap-3 shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all hover:bg-white/[0.06] pointer-events-auto">
-            {userRole === 'admin' ? (
-              <Shield className="h-4 w-4 text-accent" />
-            ) : userRole === 'editor' ? (
-              <Edit3 className="h-4 w-4 text-blue-400" />
-            ) : (
-              <Eye className="h-4 w-4 text-white/40" />
-            )}
-            
-            <div className="h-4 w-[1px] bg-white/10" />
-
-            <div className="flex items-center gap-2">
-              <div 
-                className="h-6 w-6 rounded-lg flex items-center justify-center text-[10px] font-black text-white/80 ring-1 ring-white/10 shadow-inner"
-                style={{ backgroundColor: `${getNeuralAvatarColor(presenceName)}33` }}
-              >
-                {presenceName[0].toUpperCase()}
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-widest text-text-h leading-none">
-                  {presenceName}
-                </span>
-                <span className={`text-[7px] font-black uppercase tracking-tighter ${
-                  userRole === 'admin' ? 'text-accent' :
-                  userRole === 'editor' ? 'text-blue-400 text-opacity-80' :
-                  'text-white/20'
-                }`}>
-                  {userRole} Mode
-                </span>
-              </div>
-            </div>
-         </div>
-
-          {/* 🟢 NEW: Export Menu */}
-          <div className="flex items-center gap-2 pointer-events-auto">
-             <button
-                onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/documents/${documentId}/export/pdf`, '_blank')}
-                className="h-11 px-6 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-text-h hover:bg-accent hover:text-bg transition-all"
-             >
-                PDF
-             </button>
-             <button
-                onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/documents/${documentId}/export/docx`, '_blank')}
-                className="h-11 px-6 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-text-h hover:bg-accent hover:text-bg transition-all"
-             >
-                DOCX
-             </button>
-          </div>
-
-          {/* 🟢 NEW: Comment Toggle */}
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className={`h-11 px-6 rounded-2xl transition-all flex items-center gap-3 pointer-events-auto border ${
-              isSidebarOpen 
-                ? 'bg-accent text-bg border-accent shadow-[0_0_40px_rgba(var(--accent-rgb),0.3)]' 
-                : 'bg-black/40 text-white/60 border-white/10 hover:bg-white/5 backdrop-blur-3xl'
-            }`}
-          >
-            <MessageSquarePlus className={`h-4 w-4 ${isSidebarOpen ? '' : 'text-accent'}`} />
-            <span className="text-[10px] font-black uppercase tracking-widest">
-              Neural Feed {isSidebarOpen ? '(Hide)' : `(${comments.length})`}
-            </span>
-          </button>
-      </div>
-
+    <div className="flex h-full w-full relative bg-bg overflow-hidden">
       {notification && (
-        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-[70] animate-in slide-in-from-top-4 duration-500">
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-[70] animate-in slide-in-from-top-4 duration-500">
            <div className="bg-accent text-bg px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-[0_0_50px_rgba(var(--accent-rgb),0.4)] flex items-center gap-3 border border-white/10 ring-1 ring-white/20">
               <Bell className="h-4 w-4 animate-bounce" />
               {notification}
@@ -400,13 +299,15 @@ export const NeuralEditor = React.memo(({
         </div>
       )}
 
-      {/* Main Editor Surface */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-24 lg:px-32 py-10 md:py-24 relative editor-surface custom-scrollbar selection:bg-accent/30 selection:text-white">
-        <div className="max-w-4xl mx-auto min-h-[70vh] bg-white/[0.02] rounded-[3rem] p-8 md:p-16 border border-white/5 shadow-2xl relative">
-          {/* Animated Background Glow */}
-          <div className="absolute top-0 left-1/4 w-1/2 h-full bg-accent/5 blur-[120px] pointer-events-none" />
+      <div className="flex-1 overflow-y-auto px-2 md:px-6 lg:px-10 py-10 relative editor-surface custom-scrollbar selection:bg-accent/30 selection:text-white">
+        <div 
+          onClick={() => editor?.commands.focus()}
+          className="max-w-4xl mx-auto min-h-[110vh] flex flex-col bg-bg shadow-[0_0_80px_rgba(0,0,0,0.1)] dark:shadow-[0_0_100px_rgba(0,0,0,0.5)] rounded-[3rem] p-6 md:p-10 border border-white/5 relative cursor-text"
+        >
+          <div className="absolute -top-40 left-1/4 w-1/2 h-[800px] bg-accent/5 blur-[160px] pointer-events-none" />
           
-          {/* 🟢 Premium Bubble Menu for Comments */}
+          {!isViewer && <EditorToolbar editor={editor} />}
+          
           {editor && !isViewer && (
             <BubbleMenu 
               editor={editor} 
@@ -415,14 +316,20 @@ export const NeuralEditor = React.memo(({
             >
               {!isAddingComment ? (
                 <button
-                  onClick={() => setIsAddingComment(true)}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent card click from firing
+                    setIsAddingComment(true);
+                  }}
                   className="flex items-center gap-2 px-4 py-2 hover:bg-white/5 rounded-xl transition-all group"
                 >
                   <MessageSquarePlus className="h-4 w-4 text-accent group-hover:scale-110 transition-transform" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-text-h">Add Feedback</span>
+                  <span className="text-[12px] font-bold uppercase tracking-widest text-text-h">Add Feedback</span>
                 </button>
               ) : (
-                <div className="flex items-center gap-2 p-1 animate-in zoom-in-95 duration-200">
+                <div 
+                  className="flex items-center gap-2 p-1 animate-in zoom-in-95 duration-200"
+                  onClick={(e) => e.stopPropagation()} // Prevent card focus when interacting with menu
+                >
                   <input
                     autoFocus
                     placeholder="Vector insight..."
@@ -445,33 +352,13 @@ export const NeuralEditor = React.memo(({
               )}
             </BubbleMenu>
           )}
-
+ 
           <EditorContent 
             editor={editor} 
-            className="prose prose-invert max-w-none min-h-[500px] 
-              prose-p:text-text-muted prose-p:leading-relaxed prose-p:text-[18px] prose-p:mb-6
-              prose-headings:text-text-h prose-headings:font-black prose-headings:tracking-tight
-              prose-h1:text-[2.5rem] md:text-[3.5rem] prose-h1:mb-12 prose-h1:leading-none
-              prose-blockquote:border-l-accent prose-blockquote:bg-accent/5 prose-blockquote:py-4 prose-blockquote:px-8 prose-blockquote:rounded-r-3xl
-              prose-strong:text-accent prose-strong:font-black" 
+            className="prose dark:prose-invert max-w-none w-full h-full flex-1 focus:outline-none" 
           />
         </div>
       </div>
-
-      {isSidebarOpen && (
-        <CommentSidebar
-          comments={comments}
-          selectedCommentId={selectedCommentId}
-          onSelectComment={setSelectedCommentId}
-          onReply={onReply}
-          onResolve={onResolve}
-          onUpdateComment={onUpdateComment}
-          onDeleteComment={onDeleteComment}
-          onUpdateReply={onUpdateReply}
-          onDeleteReply={onDeleteReply}
-          currentUser={currentUser}
-        />
-      )}
     </div>
   );
 });

@@ -211,7 +211,7 @@ export async function shareDocumentController(c: Context) {
     return c.json({ success: true, collaborator: result.collab });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
-      return c.json({ error: "Invalid input", details: error.errors }, 400);
+      return c.json({ error: "Invalid input", details: error.issues }, 400);
     }
     console.error("Sharing error:", error);
     return c.json({ error: "Failed to share document" }, 500);
