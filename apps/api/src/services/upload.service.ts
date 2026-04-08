@@ -2,8 +2,6 @@ import { PDFParse } from "pdf-parse";
 import mammoth from "mammoth";
 import { prisma } from "@repo/db";
 
-import * as Y from "yjs";
-
 export async function processUpload(file: File, userId: string): Promise<any> {
   const buffer = Buffer.from(await file.arrayBuffer());
   let content = "";
@@ -26,11 +24,19 @@ export async function processUpload(file: File, userId: string): Promise<any> {
     throw new Error("Unsupported file type");
   }
 
+  // Convert plain text to HTML paragraphs for rich export (PDF/DOCX)
+  const htmlContent = content
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    .map(line => `<p>${line}</p>`)
+    .join('');
+
   // Create the document
   const document = await prisma.document.create({
     data: {
       title: title || "Uploaded Document",
-      content: content, // Save HTML/Text. The frontend will sync this into Yjs on first load
+      content: htmlContent || `<p>${content}</p>`,
       ownerId: userId,
     },
   });

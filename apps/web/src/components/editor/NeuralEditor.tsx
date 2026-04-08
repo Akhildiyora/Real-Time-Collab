@@ -217,7 +217,16 @@ export const NeuralEditor = React.memo(({
   useEffect(() => {
     if (!documentId) return;
 
+    // We use a flag to check if IndexedDB has any stored data
+    let hasLocalData = false;
+    
     const persistence = new IndexeddbPersistence(documentId, yDoc);
+    persistence.on('synced', () => {
+      // Check if there's any meaningful content in the local DB
+      const fragment = yDoc.getXmlFragment('default');
+      hasLocalData = fragment.length > 0;
+    });
+
     const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3000';
     const jwtToken = (localStorage.getItem('accessToken') || '').replace(/^Bearer\s+/i, "");
     
@@ -236,12 +245,23 @@ export const NeuralEditor = React.memo(({
       if (isSynced && !hasSeededOriginalData.current && !isViewer && initialContent) {
         hasSeededOriginalData.current = true;
         
-        // Let Tiptap initialize its collaboration wrapper
+        // Wait for Tiptap's Collaboration extension to mount fully
         setTimeout(() => {
-          if (editor && editor.isEmpty) {
-            editor.commands.setContent(initialContent);
+          if (editor) {
+            // Check if yDoc has real content from the server or local cache
+            const fragment = yDoc.getXmlFragment('default');
+            const hasServerData = fragment.length > 0;
+            
+            if (!hasServerData && !hasLocalData) {
+              // Fresh document with no Yjs state: seed from the uploaded HTML content
+              try {
+                editor.commands.setContent(initialContent, false);
+              } catch (err) {
+                console.warn('[NeuralEditor] Could not seed initial content:', err);
+              }
+            }
           }
-        }, 150);
+        }, 300);
       }
     };
     newProvider.on('sync', handleSync);
