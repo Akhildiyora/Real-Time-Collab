@@ -42,7 +42,7 @@ export async function processUpload(file: File, userId: string): Promise<any> {
     if (line.length === 0) {
       // Empty line signals the end of the current paragraph block
       if (currentParagraph.length > 0) {
-        htmlBlocks.push(`<p>${currentParagraph.join(' ')}</p>`);
+        htmlBlocks.push(`<p>${currentParagraph.join('<br>')}</p>`);
         currentParagraph = [];
       }
     } else {
@@ -52,7 +52,7 @@ export async function processUpload(file: File, userId: string): Promise<any> {
       } else if (line.match(/^(\d+\.|[•\-\*])\s+/)) {
         // Simple list item detection
         if (currentParagraph.length > 0) {
-           htmlBlocks.push(`<p>${currentParagraph.join(' ')}</p>`);
+           htmlBlocks.push(`<p>${currentParagraph.join('<br>')}</p>`);
            currentParagraph = [];
         }
         htmlBlocks.push(`<ul><li>${line.replace(/^(\d+\.|[•\-\*])\s+/, '')}</li></ul>`);
@@ -63,7 +63,7 @@ export async function processUpload(file: File, userId: string): Promise<any> {
   }
   
   if (currentParagraph.length > 0) {
-    htmlBlocks.push(`<p>${currentParagraph.join(' ')}</p>`);
+    htmlBlocks.push(`<p>${currentParagraph.join('<br>')}</p>`);
   }
 
   const htmlContent = htmlBlocks.join('\n');
