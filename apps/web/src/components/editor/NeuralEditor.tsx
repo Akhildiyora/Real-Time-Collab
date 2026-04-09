@@ -14,6 +14,42 @@ import { NeuralSelectionCallback } from './NeuralSelectionCallback';
 import { MentionList } from './MentionList';
 import { Bell, MessageSquarePlus, Send } from 'lucide-react';
 import { documentService } from '../../services/document.service';
+import { Mark, mergeAttributes } from '@tiptap/core';
+
+export const InlineSize = Mark.create({
+  name: 'inlineSize',
+  addAttributes() {
+    return {
+      size: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-size'),
+        renderHTML: attributes => {
+          if (!attributes.size) return {};
+          return { 
+            'data-size': attributes.size,
+            style: attributes.size === 'large' ? 'font-size: 1.5em' : 'font-size: 0.75em'
+          };
+        },
+      },
+    };
+  },
+  parseHTML() {
+    return [{ tag: 'span[data-size]' }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['span', mergeAttributes(HTMLAttributes), 0];
+  },
+  addCommands() {
+    return {
+      setInlineSize: (size: string) => ({ commands }: any) => {
+        return commands.setMark('inlineSize', { size });
+      },
+      unsetInlineSize: () => ({ commands }: any) => {
+        return commands.unsetMark('inlineSize');
+      },
+    } as any;
+  },
+});
 
 interface NeuralEditorProps {
   documentId: string;
@@ -137,6 +173,7 @@ export const NeuralEditor = React.memo(({
           color: getNeuralAvatarColor(currentUser?.email || presenceName),
         },
       }) : undefined,
+      InlineSize,
       NeuralSelectionCallback,
       Mention.configure({
         HTMLAttributes: {
@@ -191,8 +228,13 @@ export const NeuralEditor = React.memo(({
     shouldRerenderOnTransaction: false,
   }, [provider, isViewer, yDoc]);
 
-  // Sync editor editable state whenever the role changes (e.g., after document query resolves).
-  // This handles the race where the editor mounts before the document API returns the real role.
+  // Track live editor ref to avoid stale closure issues in WebSocket callbacks
+  const editorRef = useRef(editor);
+  useEffect(() => {
+    editorRef.current = editor;
+  }, [editor]);
+
+  // Sync editor editable state whenever the role changes
   useEffect(() => {
     if (editor && editor.isEditable !== !isViewer) {
       editor.setEditable(!isViewer, true);
@@ -256,15 +298,16 @@ export const NeuralEditor = React.memo(({
         
         // Wait for Tiptap's Collaboration extension to mount fully
         setTimeout(() => {
-          if (editor) {
+          if (editorRef.current) {
             // Check if yDoc has real content from the server or local cache
             const fragment = yDoc.getXmlFragment('default');
-            const hasServerData = fragment.length > 0;
+            // Tiptap often initializes an empty paragraph resulting in length === 1
+            const hasServerData = editorRef.current.getText().trim().length > 0 || fragment.length > 1;
             
             if (!hasServerData && !hasLocalData) {
               // Fresh document with no Yjs state: seed from the uploaded HTML content
               try {
-                editor.commands.setContent(initialContent, false);
+                editorRef.current.commands.setContent(initialContent, false);
               } catch (err) {
                 console.warn('[NeuralEditor] Could not seed initial content:', err);
               }

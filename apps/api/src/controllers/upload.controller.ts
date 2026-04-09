@@ -18,6 +18,10 @@ export async function uploadDocumentController(c: Context) {
     return c.json(document, 201);
   } catch (error: any) {
     console.error("Upload error:", error);
-    return c.json({ error: error.message || "Failed to upload document" }, 500);
+    return c.json({ 
+      error: "Failed to upload document",
+      message: error?.message, 
+      stack: error?.stack 
+    }, 500);
   }
 }
