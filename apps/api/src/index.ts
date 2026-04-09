@@ -73,9 +73,18 @@ app.use("*", async (c, next) => {
 app.use(
   "*",
   cors({
-    origin: "*",
-    allowHeaders: ["Content-Type", "Authorization"],
+    origin: (origin) => {
+      // Securely reflect the exact origin if it matches Vercel or Local dev servers
+      if (!origin) return "https://real-time-collab-web.vercel.app";
+      if (origin === "https://real-time-collab-web.vercel.app" || origin.startsWith("http://localhost:")) {
+        return origin;
+      }
+      return "https://real-time-collab-web.vercel.app";
+    },
+    allowHeaders: ["Content-Type", "Authorization", "Accept"],
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    credentials: true,
+    maxAge: 86400, // Cache preflight requests for 24 hours
   }),
 );
 
