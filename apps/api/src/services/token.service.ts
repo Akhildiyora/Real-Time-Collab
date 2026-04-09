@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 
-const ACCESS_TOKEN_TTL = "15m";
+const ACCESS_TOKEN_TTL = "24h";
 const REFRESH_TOKEN_TTL = "7d";
 
 type TokenPayload = {

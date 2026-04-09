@@ -67,6 +67,7 @@ export const NeuralEditor = React.memo(({
   const yDoc = useMemo(() => new Y.Doc(), []);
   const hasSeededOriginalData = useRef(false);
 
+
   // Sync Network Status
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -190,9 +191,17 @@ export const NeuralEditor = React.memo(({
     shouldRerenderOnTransaction: false,
   }, [provider, isViewer, yDoc]);
 
+  // Sync editor editable state whenever the role changes (e.g., after document query resolves).
+  // This handles the race where the editor mounts before the document API returns the real role.
+  useEffect(() => {
+    if (editor && editor.isEditable !== !isViewer) {
+      editor.setEditable(!isViewer, true);
+    }
+  }, [editor, isViewer]);
+
   // Phase 7: Add Comment Logic
   const handleAddComment = useCallback(async () => {
-    if (!editor || !commentInput.trim() || isViewer) return;
+    if (!editor || !commentInput.trim()) return;
 
     const { from, to } = editor.state.selection;
     if (from === to) return;
@@ -284,12 +293,6 @@ export const NeuralEditor = React.memo(({
       } catch { /* Ignored */ }
     });
 
-    yDoc.on('update', (_update: Uint8Array, origin: any) => {
-      if (origin !== newProvider && !isViewer && editor) {
-         debouncedSync(yDoc, editor.getHTML());
-      }
-    });
-
     setProvider(newProvider);
 
     return () => {
@@ -302,9 +305,11 @@ export const NeuralEditor = React.memo(({
       setProvider(null);
       persistence.destroy();
       debouncedSync.cancel();
-      yDoc.off('update', () => {});
     };
-  }, [documentId, shareToken, onSyncEvent, yDoc, debouncedSync, isViewer, setSaveStatus, setIsOnline, editor, initialContent]);
+  }, [documentId, shareToken, onSyncEvent, yDoc, debouncedSync, isViewer, setSaveStatus]);
+  // NOTE: `editor` and `setIsOnline` are intentionally excluded from deps.
+  // Including `editor` causes the WS provider to be torn down on every Tiptap re-render,
+  // which breaks collaborative sync. The editor ref is safely captured in the setTimeout callback.
 
   if (!editor) return null;
 
@@ -328,7 +333,7 @@ export const NeuralEditor = React.memo(({
           
           {!isViewer && <EditorToolbar editor={editor} />}
           
-          {editor && !isViewer && (
+          {editor && (
             <BubbleMenu 
               editor={editor} 
               tippyOptions={{ duration: 100, placement: 'top' }}

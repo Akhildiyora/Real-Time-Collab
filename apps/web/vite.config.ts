@@ -11,7 +11,6 @@ export default defineConfig({
   resolve: {
     alias: {
       // Use require.resolve to find the EXACT physical location of each singleton
-      'yjs': require.resolve('yjs'),
       'prosemirror-model': require.resolve('prosemirror-model'),
       'prosemirror-state': require.resolve('prosemirror-state'),
       'prosemirror-view': require.resolve('prosemirror-view'),

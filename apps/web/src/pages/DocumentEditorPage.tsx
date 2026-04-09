@@ -164,7 +164,12 @@ export function DocumentEditorPage() {
     );
   }
 
-  const userRole = document.currentUserRole || (document.ownerId === user?.id ? 'admin' : 'viewer');
+  // Trust the role returned by the API middleware (getDocumentAccess correctly returns
+  // 'admin' for owners, 'editor'/'viewer' for collaborators).
+  // NEVER fall back to 'viewer' for authenticated access — that silently locks the editor.
+  // If currentUserRole is somehow missing, default to 'editor' so the user can write.
+  const userRole = (document.currentUserRole as string) || 
+    (document.ownerId === user?.id ? 'admin' : 'editor');
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-bg text-text-h">

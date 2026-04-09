@@ -2,8 +2,13 @@ import crypto from "node:crypto";
 import type { IncomingMessage } from "node:http";
 import type { WebSocket } from "ws";
 import { WebSocketServer } from "ws";
-import * as Y from "yjs";
+import { createRequire } from "module";
+import type * as YTypes from "yjs";
+
+const require = createRequire(import.meta.url);
+const Y = require("yjs");
 import { prisma } from "@repo/db";
+
 // @ts-ignore - y-websocket/bin/utils is the standard location for setupWSConnection
 import { setupWSConnection, setPersistence, getYDoc } from "y-websocket/bin/utils";
 import { redis } from "../redis";
@@ -34,7 +39,7 @@ const DEBOUNCE_MS = 10000;
 export async function setupYjsWebsocket(httpServer: any) {
   // Persistence: Load initial document state from Prisma
   setPersistence({
-    bindState: async (docName: string, ydoc: Y.Doc) => {
+    bindState: async (docName: string, ydoc: YTypes.Doc) => {
       const doc = await prisma.document.findUnique({
         where: { id: docName },
         select: { content: true, yjsState: true },
@@ -50,7 +55,7 @@ export async function setupYjsWebsocket(httpServer: any) {
       // Removed backend generation of Yjs state for plain text. 
       // The frontend will seed the initial content cleanly into the editor to respect Prosemirror schemas.
     },
-    writeState: async (_docName: string, _ydoc: Y.Doc) => {
+    writeState: async (_docName: string, _ydoc: YTypes.Doc) => {
       // Handled in bridgeDocToRedis
       return true;
     }

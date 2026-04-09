@@ -104,7 +104,10 @@ export const EditorToolbar = ({ editor }: EditorToolbarProps) => {
         return (
           <button
             key={i}
-            onClick={btn.action}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              btn.action();
+            }}
             disabled={btn.disabled}
             className={`p-2 rounded-xl transition-all group flex items-center justify-center
               ${btn.active 

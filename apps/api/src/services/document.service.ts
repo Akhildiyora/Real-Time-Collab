@@ -107,27 +107,25 @@ export async function updateDocumentForUser(params: {
       where: { documentId: params.documentId },
     })) + 1;
 
+  const updateData: any = {};
+  if (params.title !== undefined) updateData.title = params.title;
+  if (params.content !== undefined) {
+    updateData.content = params.content;
+    updateData.versions = {
+      create: { content: params.content, version: nextVersionNumber }
+    };
+  }
+  if (params.yjsState !== undefined) updateData.yjsState = params.yjsState;
+
+  if (params.userId !== "guest") {
+    updateData.activities = {
+      create: { userId: params.userId, action: "DOCUMENT_UPDATED" }
+    };
+  }
+
   const updated = await prisma.document.update({
     where: { id: params.documentId },
-    data: {
-      title: params.title ?? existing.title,
-      content: params.content ?? existing.content,
-      yjsState: params.yjsState ?? (existing.yjsState as any),
-      versions: params.content
-        ? {
-            create: {
-              content: params.content,
-              version: nextVersionNumber,
-            },
-          }
-        : undefined,
-      activities: {
-        create: {
-          userId: params.userId,
-          action: "DOCUMENT_UPDATED",
-        },
-      },
-    },
+    data: updateData,
   });
 
   return updated;
