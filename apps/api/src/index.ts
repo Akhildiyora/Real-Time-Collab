@@ -74,12 +74,9 @@ app.use(
   "*",
   cors({
     origin: (origin) => {
-      // Securely reflect the exact origin if it matches Vercel or Local dev servers
-      if (!origin) return "https://real-time-collab-web.vercel.app";
-      if (origin === "https://real-time-collab-web.vercel.app" || origin.startsWith("http://localhost:")) {
-        return origin;
-      }
-      return "https://real-time-collab-web.vercel.app";
+      // Unconditionally mirror the exact mathematical string the browser requested. 
+      // This bulletproofs trailing slashes and satisfies credentials: true headers perfectly.
+      return origin || "https://real-time-collab-web.vercel.app";
     },
     allowHeaders: ["Content-Type", "Authorization", "Accept"],
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
