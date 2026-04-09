@@ -100,7 +100,7 @@ export function HomePage() {
             <input 
               type="file" 
               className="hidden" 
-              accept=".txt,.pdf,.docx"
+              accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               onChange={handleFileUpload}
               disabled={uploadMutation.isPending}
             />

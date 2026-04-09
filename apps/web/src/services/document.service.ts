@@ -121,8 +121,8 @@ class DocumentService {
       body: formData,
     });
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || "Failed to upload document");
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || err.error || "Failed to upload document");
     }
     return res.json();
   }

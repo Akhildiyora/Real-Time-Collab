@@ -136,7 +136,7 @@ export const EditorToolbar = ({ editor }: EditorToolbarProps) => {
   ];
 
   return (
-    <div className="flex items-center gap-1 p-1.5 bg-bg/80 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-2xl mb-6 ring-1 ring-white/5 sticky top-0 z-[60]">
+    <div className="flex items-center gap-1 p-1.5 mb-3">
       {buttons.map((btn, i) => {
         if (btn.type === 'divider') {
           return <div key={`div-${i}`} className="w-[1px] h-6 bg-white/10 mx-1" />;

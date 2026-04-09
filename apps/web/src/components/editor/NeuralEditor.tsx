@@ -357,7 +357,7 @@ export const NeuralEditor = React.memo(({
   if (!editor) return null;
 
   return (
-    <div className="flex h-full w-full relative bg-bg overflow-hidden">
+    <div className="flex h-full w-full relative bg-bg overflow-hidden flex-col">
       {notification && (
         <div className="absolute top-8 left-1/2 -translate-x-1/2 z-[70] animate-in slide-in-from-top-4 duration-500">
            <div className="bg-accent text-bg px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-[0_0_50px_rgba(var(--accent-rgb),0.4)] flex items-center gap-3 border border-white/10 ring-1 ring-white/20">
@@ -367,14 +367,19 @@ export const NeuralEditor = React.memo(({
         </div>
       )}
 
+      {/* FIXED TOOLBAR IMMEDIATELY BELOW NAVBAR */}
+      {!isViewer && (
+        <div className="w-full flex justify-center border-b border-white/5 bg-bg/90 backdrop-blur-xl z-50 pt-3">
+          <EditorToolbar editor={editor} />
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto px-2 md:px-6 lg:px-10 py-10 relative editor-surface custom-scrollbar selection:bg-accent/30 selection:text-white">
         <div 
           onClick={() => editor?.commands.focus()}
           className="max-w-4xl mx-auto min-h-[110vh] flex flex-col bg-bg shadow-[0_0_80px_rgba(0,0,0,0.1)] dark:shadow-[0_0_100px_rgba(0,0,0,0.5)] rounded-[3rem] p-6 md:p-10 border border-white/5 relative cursor-text"
         >
           <div className="absolute -top-40 left-1/4 w-1/2 h-[800px] bg-accent/5 blur-[160px] pointer-events-none" />
-          
-          {!isViewer && <EditorToolbar editor={editor} />}
           
           {editor && (
             <BubbleMenu 
